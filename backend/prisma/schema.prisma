@@ -1,0 +1,80 @@
+// backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// O Dono do SaaS (Você ou seu Cliente)
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Senha Hasheada
+  name      String?
+  createdAt DateTime @default(now())
+  
+  campaigns Campaign[]
+}
+
+// Os Contatos (Quem recebe os emails)
+model Contact {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String?
+  status       String   @default("SUBSCRIBED") // SUBSCRIBED, UNSUBSCRIBED, BOUNCED
+  tags         String[] // Ex: ["newsletter", "cliente-antigo"]
+  unsubscribeToken String @unique @default(uuid())
+  createdAt    DateTime @default(now())
+
+  emailLogs    EmailLog[]
+}
+
+// As Campanhas (Os disparos em massa)
+model Campaign {
+  id          String    @id @default(uuid())
+  name        String?   // <--- ADICIONE ISSO (Nome interno para sua organização)
+  subject     String
+  body        String    @db.Text
+  status      String    @default("DRAFT")
+  
+  sentCount   Int       @default(0)
+  openCount   Int       @default(0)
+  clickCount  Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  scheduledAt DateTime?
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  
+  emailLogs   EmailLog[]
+}
+
+// Log individual de cada envio (Para saber quem recebeu o que)
+model EmailLog {
+  id          String   @id @default(uuid())
+  status      String   @default("PENDING") // PENDING, SENT, FAILED, OPENED, CLICKED
+  messageId   String?  // ID retornado pela Amazon SES/SMTP
+  openedAt    DateTime?
+  
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id])
+  
+  contactId   String
+  contact     Contact  @relation(fields: [contactId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Config {
+  id        String   @id @default(uuid())
+  key       String   @unique // Ex: "smtp_host", "smtp_user"
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

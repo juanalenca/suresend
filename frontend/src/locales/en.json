@@ -1,0 +1,115 @@
+{
+    "menu": {
+        "dashboard": "Dashboard",
+        "campaigns": "Campaigns",
+        "contacts": "Contacts",
+        "settings": "Settings",
+        "logout": "Logout"
+    },
+    "buttons": {
+        "new_campaign": "New Campaign",
+        "send": "Send",
+        "save": "Save",
+        "save_draft": "Save Draft",
+        "send_now": "Send Now",
+        "cancel": "Cancel",
+        "new_contact": "New Contact",
+        "import": "Import",
+        "save_settings": "Save Settings",
+        "saving": "Saving..."
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "subtitle": "Welcome to your control panel.",
+        "loading": "Loading statistics...",
+        "total_contacts": "Total Contacts",
+        "open_rate": "Open Rate",
+        "from_sends": "From {{count}} sends",
+        "server_status": "Server Status"
+    },
+    "contacts": {
+        "title": "Contacts",
+        "subtitle": "Manage your leads and customers.",
+        "loading": "Loading...",
+        "columns": {
+            "name": "Name",
+            "email": "Email",
+            "created_at": "Created At",
+            "tags": "Tags",
+            "actions": "Actions"
+        }
+    },
+    "campaigns": {
+        "title": "Campaigns",
+        "subtitle": "Manage your email blasts.",
+        "loading": "Loading...",
+        "empty": "No campaigns found.",
+        "columns": {
+            "subject": "Subject",
+            "status": "Status",
+            "sent": "Sent",
+            "opens": "Opens",
+            "created_at": "Created At"
+        },
+        "new": {
+            "title": "New Campaign",
+            "name_label": "Internal Name",
+            "name_placeholder": "Ex: January 2025 Newsletter",
+            "subject_label": "Email Subject",
+            "subject_placeholder": "Ex: Unmissable news for you!",
+            "content_label": "Email Content",
+            "content_placeholder": "<h1>Write your HTML or text here</h1>",
+            "visual_editor_note": "* Visual editor temporarily simplified.",
+            "success_draft": "Draft saved successfully!",
+            "error_save": "Error saving campaign. Check if server is running.",
+            "validation_subject": "Subject is required."
+        },
+        "status": {
+            "DRAFT": "Draft",
+            "PENDING": "Pending",
+            "RUNNING": "Sending",
+            "COMPLETED": "Completed",
+            "FAILED": "Failed"
+        }
+    },
+    "settings": {
+        "title": "Settings",
+        "preferences": "Preferences",
+        "preferences_desc": "Customize your experience.",
+        "language": "Language",
+        "smtp_title": "Sending Settings (SMTP)",
+        "smtp_desc": "Configure your own email server for sending.",
+        "host": "SMTP Host",
+        "port": "Port",
+        "user": "SMTP User",
+        "pass": "SMTP Password",
+        "pass_hint": "Leave blank to keep current password.",
+        "from_email": "Sender Email (From)",
+        "from_email_hint": "Tip: You can use `Company Name <email@domain.com>` or just the email.",
+        "success_title": "Settings saved!",
+        "success_desc": "Your SMTP server has been updated.",
+        "error_title": "Error saving",
+        "error_desc": "Try again later.",
+        "loading": "Loading settings..."
+    },
+    "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "page_of": "Page {{current}} of {{total}}"
+    },
+    "sidebar": {
+        "user_name": "User Name"
+    },
+    "login": {
+        "title": "Access your account",
+        "subtitle": "Manage your email campaigns",
+        "email": "Email",
+        "password": "Password",
+        "submit": "Sign In",
+        "loading": "Signing in..."
+    },
+    "errors": {
+        "invalid_auth": "Invalid credentials. Please check your email and password.",
+        "generic": "Something went wrong. Please try again."
+    }
+}

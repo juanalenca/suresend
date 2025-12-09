@@ -1,0 +1,28 @@
+# Dependências
+node_modules/
+
+# Build de Produção
+dist/
+build/
+
+# Variáveis de Ambiente (SEGREDOS - NUNCA REMOVA ISSO)
+.env
+.env.production
+.env.local
+
+# Logs e Dados
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# Editor e Sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker (Se tiver volumes locais mapeados)
+pgdata/
+redisdata/

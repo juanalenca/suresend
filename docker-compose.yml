@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # O Banco de Dados Principal
+  postgres:
+    image: postgres:16-alpine
+    container_name: suresend_db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # O Gerenciador de Filas (Essencial para não travar o envio)
+  redis:
+    image: redis:7-alpine
+    container_name: suresend_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+  # Interface visual para gerenciar o Banco de Dados (Opcional, mas ajuda MUITO)
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
+  redisdata:

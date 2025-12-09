@@ -1,0 +1,42 @@
+{
+    "sidebar": {
+        "dashboard": "Dashboard",
+        "campaigns": "Campaigns",
+        "contacts": "Contacts",
+        "settings": "Settings"
+    },
+    "contacts": {
+        "title": "Contacts",
+        "subtitle": "Manage your leads and customers.",
+        "new_contact": "New Contact",
+        "import_csv": "Import CSV",
+        "table": {
+            "name": "Name",
+            "email": "Email",
+            "tags": "Tags",
+            "status": "Status",
+            "actions": "Actions",
+            "next": "Next",
+            "previous": "Previous",
+            "page": "Page",
+            "of": "of",
+            "no_results": "No results."
+        },
+        "dialog": {
+            "add_title": "Add Contact",
+            "add_desc": "Manually add a new contact to your list.",
+            "import_title": "Import Contacts",
+            "import_desc": "Select a CSV file with columns: email, name, tags.",
+            "save": "Save",
+            "saving": "Saving...",
+            "import": "Import",
+            "importing": "Importing...",
+            "cancel": "Cancel"
+        }
+    },
+    "common": {
+        "loading": "Loading...",
+        "success": "Success",
+        "error": "Error"
+    }
+}

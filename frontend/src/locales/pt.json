@@ -1,0 +1,115 @@
+{
+    "menu": {
+        "dashboard": "Dashboard",
+        "campaigns": "Campanhas",
+        "contacts": "Contatos",
+        "settings": "Configurações",
+        "logout": "Sair"
+    },
+    "buttons": {
+        "new_campaign": "Nova Campanha",
+        "send": "Enviar",
+        "save": "Salvar",
+        "save_draft": "Salvar Rascunho",
+        "send_now": "Enviar Agora",
+        "cancel": "Cancelar",
+        "new_contact": "Novo Contato",
+        "import": "Importar",
+        "save_settings": "Salvar Configurações",
+        "saving": "Salvando..."
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "subtitle": "Bem-vindo ao painel de controle.",
+        "loading": "Carregando estatísticas...",
+        "total_contacts": "Total de Contatos",
+        "open_rate": "Taxa de Abertura",
+        "from_sends": "De {{count}} envios",
+        "server_status": "Status do Servidor"
+    },
+    "contacts": {
+        "title": "Contatos",
+        "subtitle": "Gerencie sua base de leads e clientes.",
+        "loading": "Carregando...",
+        "columns": {
+            "name": "Nome",
+            "email": "Email",
+            "created_at": "Criado em",
+            "tags": "Tags",
+            "actions": "Ações"
+        }
+    },
+    "campaigns": {
+        "title": "Campanhas",
+        "subtitle": "Gerencie seus disparos de e-mail.",
+        "loading": "Carregando...",
+        "empty": "Nenhuma campanha encontrada.",
+        "columns": {
+            "subject": "Assunto",
+            "status": "Status",
+            "sent": "Enviados",
+            "opens": "Aberturas",
+            "created_at": "Criado em"
+        },
+        "new": {
+            "title": "Nova Campanha",
+            "name_label": "Nome Interno",
+            "name_placeholder": "Ex: Newsletter Janeiro 2025",
+            "subject_label": "Assunto do E-mail",
+            "subject_placeholder": "Ex: Novidades imperdíveis para você!",
+            "content_label": "Conteúdo do E-mail",
+            "content_placeholder": "<h1>Escreva seu HTML ou texto aqui</h1>",
+            "visual_editor_note": "* Editor visual simplificado temporariamente.",
+            "success_draft": "Rascunho salvo com sucesso!",
+            "error_save": "Erro ao salvar campanha. Verifique se o servidor está rodando.",
+            "validation_subject": "O assunto é obrigatório."
+        },
+        "status": {
+            "DRAFT": "Rascunho",
+            "PENDING": "Pendente",
+            "RUNNING": "Enviando",
+            "COMPLETED": "Concluído",
+            "FAILED": "Falhou"
+        }
+    },
+    "settings": {
+        "title": "Configurações",
+        "preferences": "Preferências",
+        "preferences_desc": "Personalize sua experiência.",
+        "language": "Idioma",
+        "smtp_title": "Configurações de Envio (SMTP)",
+        "smtp_desc": "Configure seu próprio servidor de e-mail para disparos.",
+        "host": "SMTP Host",
+        "port": "Porta",
+        "user": "Usuário SMTP",
+        "pass": "Senha SMTP",
+        "pass_hint": "Deixe em branco para manter a senha atual.",
+        "from_email": "E-mail de Remetente (From)",
+        "from_email_hint": "Dica: Você pode usar o formato `Nome da Empresa <email@dominio.com>` ou apenas o e-mail.",
+        "success_title": "Configurações salvas!",
+        "success_desc": "Seu servidor SMTP foi atualizado.",
+        "error_title": "Erro ao salvar",
+        "error_desc": "Tente novamente mais tarde.",
+        "loading": "Carregando configurações..."
+    },
+    "pagination": {
+        "previous": "Anterior",
+        "next": "Próximo",
+        "page_of": "Página {{current}} de {{total}}"
+    },
+    "sidebar": {
+        "user_name": "Nome do Usuário"
+    },
+    "login": {
+        "title": "Acesse sua conta",
+        "subtitle": "Gerencie suas campanhas de e-mail",
+        "email": "Email",
+        "password": "Senha",
+        "submit": "Entrar na Plataforma",
+        "loading": "Entrando..."
+    },
+    "errors": {
+        "invalid_auth": "Credenciais inválidas. Verifique seu e-mail e senha.",
+        "generic": "Algo deu errado. Tente novamente."
+    }
+}
