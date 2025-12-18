@@ -22,7 +22,7 @@ export function Login() {
     setLoading(true)
 
     try {
-      const response = await fetch('http://localhost:3000/auth/login', {
+      const response = await fetch('http://localhost:3001/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -34,7 +34,7 @@ export function Login() {
         throw new Error(data.message || 'Erro ao entrar')
       }
 
-      login(data.token)
+      login(data.token, { name: 'Admin User', email: email })
       toast({
         title: t('login.title'),
         description: t('login.subtitle'),

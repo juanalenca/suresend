@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 
 export function Sidebar() {
     const { t } = useTranslation();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const location = useLocation();
 
     const menuItems = [
@@ -48,11 +48,11 @@ export function Sidebar() {
             <div className="p-4 border-t border-slate-800 space-y-4">
                 <div className="flex items-center gap-3 px-4 py-3">
                     <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold">
-                        U
+                        {user?.name?.charAt(0) || 'U'}
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-white">{t('sidebar.user_name')}</p>
-                        <p className="text-xs text-slate-400">user@example.com</p>
+                        <p className="text-sm font-medium text-white">{user?.name || t('sidebar.user_name')}</p>
+                        <p className="text-xs text-slate-400">{user?.email || 'user@example.com'}</p>
                     </div>
                 </div>
 

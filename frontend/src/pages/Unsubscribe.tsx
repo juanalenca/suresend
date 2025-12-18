@@ -13,7 +13,7 @@ export function Unsubscribe() {
             return;
         }
 
-        fetch(`http://localhost:3000/unsubscribe/${token}`)
+        fetch(`http://localhost:3001/unsubscribe/${token}`)
             .then(async (res) => {
                 if (res.ok) {
                     setStatus('success');
@@ -41,7 +41,7 @@ export function Unsubscribe() {
                     {status === 'loading' && (
                         <p>Por favor, aguarde um momento enquanto removemos seu e-mail.</p>
                     )}
-                    
+
                     {status === 'success' && (
                         <div>
                             <p className="mb-4">

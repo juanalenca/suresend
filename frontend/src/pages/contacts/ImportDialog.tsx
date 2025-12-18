@@ -32,7 +32,7 @@ export function ImportDialog({ onSuccess }: ImportDialogProps) {
         formData.append('file', file)
 
         try {
-            const response = await fetch('http://localhost:3000/contacts/import', {
+            const response = await fetch('http://localhost:3001/contacts/import', {
                 method: 'POST',
                 body: formData,
             })

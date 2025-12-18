@@ -18,7 +18,7 @@ export function Contacts() {
     const fetchContacts = async (page: number) => {
         setLoading(true)
         try {
-            const response = await fetch(`http://localhost:3000/contacts?page=${page + 1}&limit=${pageSize}`)
+            const response = await fetch(`http://localhost:3001/contacts?page=${page + 1}&limit=${pageSize}`)
             const result = await response.json()
             setData(result.data)
             setPageCount(result.meta.totalPages)

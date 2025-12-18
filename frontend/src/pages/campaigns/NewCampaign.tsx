@@ -33,7 +33,7 @@ export default function NewCampaign() { // Mudei para default para facilitar imp
         setLoading(true)
         try {
             // 1. Create Draft (Real API)
-            const res = await fetch('http://localhost:3000/campaigns', {
+            const res = await fetch('http://localhost:3001/campaigns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
@@ -45,7 +45,7 @@ export default function NewCampaign() { // Mudei para default para facilitar imp
 
             // 2. Send if requested (Real API)
             if (sendNow) {
-                const sendRes = await fetch(`http://localhost:3000/campaigns/${campaign.id}/send`, {
+                const sendRes = await fetch(`http://localhost:3001/campaigns/${campaign.id}/send`, {
                     method: 'POST'
                 })
                 if (!sendRes.ok) throw new Error('Failed to send campaign')

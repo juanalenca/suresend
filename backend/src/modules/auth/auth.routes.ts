@@ -5,39 +5,47 @@ import jwt from 'jsonwebtoken'
 import { prisma } from '../../lib/prisma'
 
 export async function authRoutes(app: FastifyInstance) {
+    // POST /auth/login - Autenticação de usuário
     app.post('/login', async (request, reply) => {
-        const bodySchema = z.object({
-            email: z.string().email(),
-            password: z.string(),
-        })
+        try {
+            const bodySchema = z.object({
+                email: z.string().email(),
+                password: z.string(),
+            })
 
-        const { email, password } = bodySchema.parse(request.body)
+            const { email, password } = bodySchema.parse(request.body)
 
-        // 1. Try to find user
-        let user = await prisma.user.findUnique({
-            where: { email }
-        })
+            // 1. Verificar se o usuário existe
+            const user = await prisma.user.findUnique({
+                where: { email }
+            })
 
-        // 2. SEED: Removed lazy seed logic. Admin is created in server.ts on startup.
+            // 2. Se usuário não existe, retornar erro 401
+            if (!user) {
+                return reply.status(401).send({ message: 'Invalid credentials' })
+            }
 
-        if (!user) {
-            return reply.status(400).send({ message: 'Invalid credentials' })
+            // 3. Comparar senha (agora sabemos que user não é null)
+            const isPasswordValid = await bcrypt.compare(password, user.password)
+
+            if (!isPasswordValid) {
+                return reply.status(401).send({ message: 'Invalid credentials' })
+            }
+
+            // 4. Gerar Token JWT
+            const token = jwt.sign(
+                { sub: user.id, email: user.email },
+                'SUPER_SECRET_JWT_KEY',
+                { expiresIn: '7d' }
+            )
+
+            return { token }
+        } catch (error) {
+            app.log.error(error)
+            return reply.status(500).send({
+                message: 'Internal server error during login',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            })
         }
-
-        // 3. Compare password
-        const isPasswordValid = await bcrypt.compare(password, user.password)
-
-        if (!isPasswordValid) {
-            return reply.status(400).send({ message: 'Invalid credentials' })
-        }
-
-        // 4. Generate Token (Simple secret for demo)
-        const token = jwt.sign(
-            { sub: user.id, email: user.email },
-            'SUPER_SECRET_JWT_KEY',
-            { expiresIn: '7d' }
-        )
-
-        return { token }
     })
 }

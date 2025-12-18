@@ -29,7 +29,7 @@ export function Campaigns() {
 
     useEffect(() => {
         // Fetch real data from Backend
-        fetch('http://localhost:3000/campaigns')
+        fetch('http://localhost:3001/campaigns')
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch')
                 return res.json()

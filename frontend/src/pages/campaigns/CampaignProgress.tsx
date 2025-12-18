@@ -32,7 +32,7 @@ export default function CampaignProgress() {
 
         const fetchStats = async () => {
             try {
-                const res = await fetch(`http://localhost:3000/campaigns/${id}/stats`);
+                const res = await fetch(`http://localhost:3001/campaigns/${id}/stats`);
                 if (!res.ok) return;
                 const data = await res.json();
                 setStats(data);

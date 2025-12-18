@@ -12,7 +12,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:3000/dashboard/stats')
+    fetch('http://localhost:3001/dashboard/stats')
       .then(res => res.json())
       .then(data => {
         setStats(data);

@@ -32,7 +32,7 @@ export function ContactDialog({ onSuccess }: ContactDialogProps) {
         setLoading(true)
 
         try {
-            const response = await fetch('http://localhost:3000/contacts', {
+            const response = await fetch('http://localhost:3001/contacts', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
