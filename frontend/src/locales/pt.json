@@ -16,7 +16,8 @@
         "new_contact": "Novo Contato",
         "import": "Importar",
         "save_settings": "Salvar Configurações",
-        "saving": "Salvando..."
+        "saving": "Salvando...",
+        "back_to_campaigns": "Voltar para Campanhas"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -44,6 +45,7 @@
         "subtitle": "Gerencie seus disparos de e-mail.",
         "loading": "Carregando...",
         "empty": "Nenhuma campanha encontrada.",
+        "empty_subtitle": "Crie sua primeira campanha para começar",
         "columns": {
             "subject": "Assunto",
             "status": "Status",
@@ -61,15 +63,42 @@
             "content_placeholder": "<h1>Escreva seu HTML ou texto aqui</h1>",
             "visual_editor_note": "* Editor visual simplificado temporariamente.",
             "success_draft": "Rascunho salvo com sucesso!",
+            "success_draft_title": "Campanha Salva",
+            "success_send_title": "Campanha em Envio",
+            "success_send_desc": "Sua campanha está sendo enviada!",
             "error_save": "Erro ao salvar campanha. Verifique se o servidor está rodando.",
-            "validation_subject": "O assunto é obrigatório."
+            "error_save_title": "Erro ao Salvar",
+            "validation_subject": "O assunto é obrigatório.",
+            "validation_subject_title": "Campo Obrigatório"
         },
+        "success_send_title": "Disparo Iniciado! 🚀",
+        "success_send_desc": "A campanha começou a ser enviada em segundo plano.",
+        "success_delete_title": "Campanha excluída",
+        "success_delete_desc": "A campanha foi removida com sucesso.",
+        "confirm_send_title": "Confirmar Envio",
+        "confirm_send_desc": "Deseja realmente iniciar o envio desta campanha? Esta ação começará o disparo para todos os contatos inscritos.",
+        "confirm_delete_title": "Confirmar Exclusão",
+        "confirm_delete_desc": "Tem certeza que deseja excluir esta campanha? Esta ação não pode ser desfeita.",
         "status": {
             "DRAFT": "Rascunho",
             "PENDING": "Pendente",
             "RUNNING": "Enviando",
+            "PROCESSING": "Processando",
             "COMPLETED": "Concluído",
             "FAILED": "Falhou"
+        },
+        "progress": {
+            "title": "Disparando Campanha",
+            "subtitle": "Acompanhe o envio em tempo real.",
+            "progress_label": "Progresso",
+            "sending": "Enviando...",
+            "completed": "Envio Concluído!",
+            "failed": "Falha no Envio",
+            "total_contacts": "Total de Contatos",
+            "sent_success": "Enviados com Sucesso",
+            "failures": "Falhas",
+            "live_logs": "Logs em Tempo Real",
+            "waiting_logs": "Processo iniciado... aguardando logs."
         }
     },
     "settings": {
@@ -106,7 +135,8 @@
         "email": "Email",
         "password": "Senha",
         "submit": "Entrar na Plataforma",
-        "loading": "Entrando..."
+        "loading": "Entrando...",
+        "error_title": "Erro ao fazer login"
     },
     "errors": {
         "invalid_auth": "Credenciais inválidas. Verifique seu e-mail e senha.",
