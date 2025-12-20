@@ -1,15 +1,14 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-// import ReactQuill from 'react-quill' <--- Comentado para não quebrar
-// import 'react-quill/dist/quill.snow.css' <--- Comentado
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea" // <--- Usando componente nativo
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { useTranslation } from "react-i18next"
+import { Sparkles, Save, Send } from "lucide-react"
 
-export default function NewCampaign() { // Mudei para default para facilitar import
+export default function NewCampaign() {
     const { t } = useTranslation()
     const navigate = useNavigate()
     const { toast } = useToast()
@@ -32,8 +31,8 @@ export default function NewCampaign() { // Mudei para default para facilitar imp
 
         setLoading(true)
         try {
-            // 1. Create Draft (Real API)
-            const res = await fetch('http://localhost:3001/campaigns', {
+            // 1. Create Campaign
+            const res = await fetch('http://localhost:3000/campaigns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
@@ -43,9 +42,9 @@ export default function NewCampaign() { // Mudei para default para facilitar imp
 
             const campaign = await res.json()
 
-            // 2. Send if requested (Real API)
+            // 2. Send if requested
             if (sendNow) {
-                const sendRes = await fetch(`http://localhost:3001/campaigns/${campaign.id}/send`, {
+                const sendRes = await fetch(`http://localhost:3000/campaigns/${campaign.id}/send`, {
                     method: 'POST'
                 })
                 if (!sendRes.ok) throw new Error('Failed to send campaign')
@@ -54,6 +53,7 @@ export default function NewCampaign() { // Mudei para default para facilitar imp
                     title: t('campaigns.new.success_send_title'),
                     description: t('campaigns.new.success_send_desc')
                 })
+                // Redirect to progress page
                 navigate(`/campaigns/${campaign.id}/progress`)
                 return
             } else {
@@ -61,9 +61,9 @@ export default function NewCampaign() { // Mudei para default para facilitar imp
                     title: t('campaigns.new.success_draft_title'),
                     description: t('campaigns.new.success_draft')
                 })
+                // Redirect back to campaigns list
+                navigate('/campaigns')
             }
-
-            navigate('/campaigns')
         } catch (error) {
             console.error(error)
             toast({
@@ -77,68 +77,84 @@ export default function NewCampaign() { // Mudei para default para facilitar imp
     }
 
     return (
-        <div>
-            <div className="max-w-4xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold text-white">{t('campaigns.new.title')}</h1>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => navigate('/campaigns')} className="border-slate-600 text-slate-400 hover:bg-slate-800 hover:text-white">
+        <div className="space-y-8">
+            {/* Header melhorado */}
+            <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 to-purple-600/10 blur-3xl" />
+                <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <Sparkles className="w-8 h-8 text-violet-400" />
+                        <h1 className="text-4xl font-bold text-white">{t('campaigns.new.title')}</h1>
+                    </div>
+                    <div className="flex gap-3">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => navigate('/campaigns')}
+                            disabled={loading}
+                        >
                             {t('buttons.cancel')}
                         </Button>
                         <Button
                             variant="secondary"
                             onClick={() => handleSave(false)}
                             disabled={loading}
-                            className="bg-slate-800 text-white hover:bg-slate-700"
+                            className="gap-2"
                         >
+                            <Save className="w-4 h-4" />
                             {t('buttons.save_draft')}
                         </Button>
                         <Button
                             onClick={() => handleSave(true)}
                             disabled={loading}
-                            className="bg-violet-600 hover:bg-violet-700 text-white"
+                            className="gap-2"
                         >
+                            <Send className="w-4 h-4" />
                             {t('buttons.send_now')}
                         </Button>
                     </div>
                 </div>
+            </div>
 
-                <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 space-y-6">
-                    <div className="grid gap-2">
-                        <Label htmlFor="name" className="text-slate-300">{t('campaigns.new.name_label')}</Label>
-                        <Input
-                            id="name"
-                            placeholder={t('campaigns.new.name_placeholder')}
-                            value={formData.name}
-                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            className="bg-slate-950 border-slate-800 text-slate-200"
-                        />
-                    </div>
+            {/* Form */}
+            <div className="glass rounded-2xl p-8 border border-slate-800/50 space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="name" className="text-slate-300 text-sm font-semibold">
+                        {t('campaigns.new.name_label')}
+                    </Label>
+                    <Input
+                        id="name"
+                        placeholder={t('campaigns.new.name_placeholder')}
+                        value={formData.name}
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                        className="bg-slate-950/50 border-slate-700 text-slate-200 h-12 rounded-xl focus:border-violet-500 focus:ring-violet-500/20"
+                    />
+                </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="subject" className="text-slate-300">{t('campaigns.new.subject_label')}</Label>
-                        <Input
-                            id="subject"
-                            placeholder={t('campaigns.new.subject_placeholder')}
-                            value={formData.subject}
-                            onChange={e => setFormData({ ...formData, subject: e.target.value })}
-                            className="bg-slate-950 border-slate-800 text-slate-200"
-                        />
-                    </div>
+                <div className="space-y-2">
+                    <Label htmlFor="subject" className="text-slate-300 text-sm font-semibold">
+                        {t('campaigns.new.subject_label')} <span className="text-red-400">*</span>
+                    </Label>
+                    <Input
+                        id="subject"
+                        placeholder={t('campaigns.new.subject_placeholder')}
+                        value={formData.subject}
+                        onChange={e => setFormData({ ...formData, subject: e.target.value })}
+                        className="bg-slate-950/50 border-slate-700 text-slate-200 h-12 rounded-xl focus:border-violet-500 focus:ring-violet-500/20"
+                        required
+                    />
+                </div>
 
-                    <div className="grid gap-2">
-                        <Label className="text-slate-300">{t('campaigns.new.content_label')}</Label>
-                        <div className="rounded-md text-slate-900">
-                            {/* Substituído Quill por Textarea */}
-                            <Textarea
-                                value={formData.body}
-                                onChange={e => setFormData({ ...formData, body: e.target.value })}
-                                className="min-h-[300px] bg-white text-slate-900 font-mono"
-                                placeholder={t('campaigns.new.content_placeholder')}
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500">{t('campaigns.new.visual_editor_note')}</p>
-                    </div>
+                <div className="space-y-2">
+                    <Label className="text-slate-300 text-sm font-semibold">
+                        {t('campaigns.new.content_label')}
+                    </Label>
+                    <Textarea
+                        value={formData.body}
+                        onChange={e => setFormData({ ...formData, body: e.target.value })}
+                        className="min-h-[400px] bg-slate-950/50 border-slate-700 text-slate-200 font-mono rounded-xl focus:border-violet-500 focus:ring-violet-500/20"
+                        placeholder={t('campaigns.new.content_placeholder')}
+                    />
+                    <p className="text-xs text-slate-500 italic">{t('campaigns.new.visual_editor_note')}</p>
                 </div>
             </div>
         </div>
