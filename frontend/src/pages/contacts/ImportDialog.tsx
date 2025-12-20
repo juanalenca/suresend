@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "react-i18next"
+import { Upload, FileSpreadsheet } from "lucide-react"
 
 interface ImportDialogProps {
     onSuccess: () => void
@@ -32,7 +33,7 @@ export function ImportDialog({ onSuccess }: ImportDialogProps) {
         formData.append('file', file)
 
         try {
-            const response = await fetch('http://localhost:3001/contacts/import', {
+            const response = await fetch('http://localhost:3000/contacts/import', {
                 method: 'POST',
                 body: formData,
             })
@@ -59,30 +60,53 @@ export function ImportDialog({ onSuccess }: ImportDialogProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="bg-slate-200 text-slate-900 hover:bg-slate-300 font-semibold border border-slate-400">{t('buttons.import')}</Button>
+                <Button 
+                    variant="outline" 
+                    className="h-12 px-6 gap-2 border-2 border-slate-700 hover:border-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
+                >
+                    <Upload className="w-5 h-5" />
+                    {t('buttons.import')}
+                </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] bg-slate-900 border-slate-800 text-slate-200">
+            <DialogContent className="sm:max-w-[500px] glass border-slate-800/50 text-slate-200">
                 <DialogHeader>
-                    <DialogTitle>Importar Contatos</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
+                        <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
+                        Importar Contatos
+                    </DialogTitle>
                     <DialogDescription className="text-slate-400">
-                        Selecione um arquivo CSV com as colunas: email, name, tags.
+                        Selecione um arquivo CSV com as colunas: <span className="text-emerald-400 font-mono">email, name, tags</span>
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid w-full max-w-sm items-center gap-1.5">
-                            <Label htmlFor="csv" className="text-slate-300">Arquivo CSV</Label>
-                            <Input
-                                id="csv"
-                                type="file"
-                                accept=".csv"
-                                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                                className="bg-slate-950 border-slate-800 text-slate-200 file:text-slate-200 file:bg-slate-800"
-                            />
+                    <div className="grid gap-5 py-4">
+                        <div className="space-y-3">
+                            <Label htmlFor="csv" className="text-slate-300 font-semibold">
+                                Arquivo CSV <span className="text-red-400">*</span>
+                            </Label>
+                            <div className="relative">
+                                <Input
+                                    id="csv"
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                                    className="bg-slate-950/50 border-slate-700 text-slate-200 h-14 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
+                                />
+                            </div>
+                            {file && (
+                                <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-lg">
+                                    <FileSpreadsheet className="w-4 h-4" />
+                                    <span>{file.name}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="submit" disabled={loading || !file} className="bg-blue-600 hover:bg-blue-700 text-white">
+                        <Button 
+                            type="submit" 
+                            disabled={loading || !file} 
+                            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 h-12"
+                        >
                             {loading ? 'Importando...' : t('buttons.import')}
                         </Button>
                     </DialogFooter>
