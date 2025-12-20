@@ -63,9 +63,6 @@ const start = async () => {
         // Check if admin exists
         const admin = await prisma.user.findUnique({ where: { email: adminEmail } });
 
-        // Use bcrypt to hash the secure password
-        // We import bcrypt dynamically or use the one from auth if available? 
-        // Better to require it here for the script.
         const bcrypt = require('bcryptjs');
         const secureHash = bcrypt.hashSync(securePass, 10);
 
@@ -75,24 +72,13 @@ const start = async () => {
                 data: {
                     email: adminEmail,
                     password: secureHash,
-                    name: 'Admin Secure'
+                    name: 'Admin'
                 }
             });
             console.log('✅ [Security] Default admin created: admin@suresend.com / 123456');
         } else {
-            // Check if password is "hashed_password_placeholder" or weak
-            // Note: In a real scenario we might not know if it's the placeholder hash unless we check the string explicitly
-            // The user request says: "If exists AND password is equal to 'hashed_password_placeholder'..."
-            // For robustness, let's just ensure it IS the secure hash if it matches the 'placeholder' logic 
-            // OR if we want to force reset it for this "Auto-Fix" task.
-            // Let's implement exactly what was asked: check for placeholder.
-            // But wait, my previous code didn't use "hashed_password_placeholder", it used a real hash.
-            // However, the user prompt implies there MIGHT be a placeholder.
-            // Let's be safe: If the user exists, we log that it exists. 
-            // If the user wants to force update, we can.
-            // The prompt says: "Substitua a senha fixa `hashed_password_placeholder` por um hash real."
-            // "Adicione uma lógica... Ao iniciar, verifique se... existe... e a senha for igual a `hashed_password_placeholder`, faça UPDATE".
-
+            // Se o usuário existir mas a senha for o placeholder 'hashed_password_placeholder'
+            // ou se quisermos garantir que a senha esteja correta para o login inicial
             if (admin.password === 'hashed_password_placeholder') {
                 console.log('⚠️ [Security] Weak admin password detected. Auto-fixing...');
                 await prisma.user.update({
@@ -104,8 +90,8 @@ const start = async () => {
         }
         // -----------------------------------------
 
-        await app.listen({ port: 3001, host: '0.0.0.0' });
-        console.log('🚀 Server running at http://localhost:3001');
+        await app.listen({ port: 3000, host: '0.0.0.0' });
+        console.log('🚀 Server running at http://localhost:3000');
     } catch (err) {
         app.log.error(err);
         process.exit(1);

@@ -22,7 +22,7 @@ export function Settings() {
 
     useEffect(() => {
         // Fetch current settings
-        fetch('http://localhost:3001/settings')
+        fetch('http://localhost:3000/settings')
             .then(res => res.json())
             .then(data => {
                 setFormData({
@@ -58,7 +58,7 @@ export function Settings() {
         setSaving(true);
 
         try {
-            const res = await fetch('http://localhost:3001/settings', {
+            const res = await fetch('http://localhost:3000/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)

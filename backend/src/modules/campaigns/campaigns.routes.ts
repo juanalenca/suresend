@@ -145,4 +145,20 @@ export async function campaignsRoutes(app: FastifyInstance) {
             return reply.status(500).send({ message: 'Error fetching stats' });
         }
     });
+
+    // DELETE /campaigns/:id - Delete
+    app.delete('/:id', async (request, reply) => {
+        const { id } = request.params as { id: string };
+
+        try {
+            // First delete related logs to avoid FK constraints
+            await prisma.emailLog.deleteMany({ where: { campaignId: id } });
+
+            await prisma.campaign.delete({ where: { id } });
+            return { message: 'Campaign deleted successfully' };
+        } catch (error) {
+            app.log.error(error);
+            return reply.status(500).send({ message: 'Error deleting campaign' });
+        }
+    });
 }

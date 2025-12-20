@@ -39,7 +39,13 @@ export async function authRoutes(app: FastifyInstance) {
                 { expiresIn: '7d' }
             )
 
-            return { token }
+            return {
+                token,
+                user: {
+                    name: user.name,
+                    email: user.email
+                }
+            }
         } catch (error) {
             app.log.error(error)
             return reply.status(500).send({

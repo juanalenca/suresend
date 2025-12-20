@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label"
 import { useAuth } from "@/context/AuthContext"
 import { useNavigate } from "react-router-dom"
 import { useToast } from "@/components/ui/use-toast"
-import { Rocket } from "lucide-react"
+import { Rocket, Mail, Lock, Sparkles } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 export function Login() {
@@ -22,7 +22,7 @@ export function Login() {
     setLoading(true)
 
     try {
-      const response = await fetch('http://localhost:3001/auth/login', {
+      const response = await fetch('http://localhost:3000/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -34,10 +34,10 @@ export function Login() {
         throw new Error(data.message || 'Erro ao entrar')
       }
 
-      login(data.token, { name: 'Admin User', email: email })
+      login(data.token, data.user)
       toast({
-        title: t('login.title'),
-        description: t('login.subtitle'),
+        title: "✨ Bem-vindo de volta!",
+        description: "Login realizado com sucesso.",
       })
       navigate('/dashboard')
     } catch (error: any) {
@@ -54,7 +54,7 @@ export function Login() {
 
       toast({
         variant: "destructive",
-        title: t('login.title'), // Or a specific error title if added
+        title: `❌ ${t('login.error_title')}`,
         description: translatedError,
       })
     } finally {
@@ -63,58 +63,97 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white p-4">
-      <div className="max-w-md w-full p-8 bg-slate-900 rounded-lg border border-slate-800 shadow-xl">
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-12 h-12 bg-violet-500/10 rounded-full flex items-center justify-center mb-4">
-            <Rocket className="w-6 h-6 text-violet-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-100">{t('login.title')}</h1>
-          <p className="text-slate-400 text-sm mt-1">{t('login.subtitle')}</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse delay-1000" />
+      </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">{t('login.email')}</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="exemplo@suresend.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="bg-slate-950 border-slate-800 focus:ring-violet-500"
-              required
-            />
-          </div>
+      <div className="relative max-w-md w-full">
+        {/* Glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-3xl blur-xl opacity-30 animate-pulse" />
 
-          <div className="space-y-2">
-            <Label htmlFor="password">{t('login.password')}</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="bg-slate-950 border-slate-800 focus:ring-violet-500"
-              required
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium transition-all"
-            disabled={loading}
-          >
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                <span>{t('login.loading')}</span>
+        {/* Main card */}
+        <div className="relative glass rounded-3xl p-8 shadow-2xl border border-slate-800/50">
+          {/* Logo section */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-500" />
+              <div className="relative w-16 h-16 bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform duration-500">
+                <Rocket className="w-8 h-8 text-white" />
+                <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-white animate-pulse" />
               </div>
-            ) : (
-              t('login.submit')
-            )}
-          </Button>
-        </form>
+            </div>
+            <h1 className="text-3xl font-bold text-slate-100 mb-1">
+              <span className="gradient-text">Sure</span>
+              <span className="text-white">Send</span>
+            </h1>
+            <p className="text-slate-400 text-sm">{t('login.subtitle')}</p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-slate-300 flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                {t('login.email')}
+              </Label>
+              <div className="relative group">
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="exemplo@suresend.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="bg-slate-950/50 border-slate-700 focus:border-violet-500 focus:ring-violet-500/20 text-white placeholder:text-slate-600 h-12 rounded-xl transition-all duration-300"
+                  required
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600/0 via-violet-600/10 to-violet-600/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 rounded-xl pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-slate-300 flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                {t('login.password')}
+              </Label>
+              <div className="relative group">
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="bg-slate-950/50 border-slate-700 focus:border-violet-500 focus:ring-violet-500/20 text-white placeholder:text-slate-600 h-12 rounded-xl transition-all duration-300"
+                  required
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600/0 via-violet-600/10 to-violet-600/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 rounded-xl pointer-events-none" />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-violet-500/25 transition-all duration-300 hover:shadow-violet-500/40 hover:scale-[1.02] relative overflow-hidden group"
+              disabled={loading}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+              {loading ? (
+                <div className="flex items-center gap-2 relative z-10">
+                  <div className="h-5 w-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                  <span>{t('login.loading')}</span>
+                </div>
+              ) : (
+                <span className="relative z-10">{t('login.submit')}</span>
+              )}
+            </Button>
+          </form>
+
+          {/* Footer */}
+          <div className="mt-6 text-center text-sm text-slate-500">
+            <p>🔒 Seus dados estão protegidos</p>
+          </div>
+        </div>
       </div>
     </div>
   )
