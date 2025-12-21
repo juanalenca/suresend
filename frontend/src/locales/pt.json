@@ -27,7 +27,38 @@
         "total_contacts": "Total de Contatos",
         "open_rate": "Taxa de Abertura",
         "from_sends": "De {{count}} envios",
-        "server_status": "Status do Servidor"
+        "server_status": "Status do Servidor",
+        "emails_sent": "E-mails Enviados",
+        "active_campaigns": "Campanhas Ativas",
+        "all_systems_operational": "Todos os sistemas operacionais",
+        "server_offline": "Servidor offline",
+        "contacts_growth": "Crescimento de Contatos",
+        "contacts_growth_desc": "Crescimento da sua lista de contatos ao longo do tempo",
+        "contacts": "Contatos",
+        "quick_actions": "Ações Rápidas",
+        "add_new_contact": "Adicionar Novo Contato",
+        "grow_audience": "Aumente sua audiência",
+        "create_campaign": "Criar Campanha",
+        "start_email_blast": "Iniciar um novo disparo",
+        "configure_smtp": "Configurar SMTP",
+        "setup_email_server": "Configure seu servidor de e-mail",
+        "recent_activity": "Atividade Recente",
+        "welcome_title": "Bem-vindo ao SureSend!",
+        "welcome_desc": "Comece adicionando seu primeiro contato ou criando uma campanha. Seu dashboard ganha vida com insights e análises.",
+        "add_contact": "Adicionar Contato",
+        "activity": {
+            "new_contact_added": "Novo contato adicionado: john@example.com",
+            "campaign_completed": "Campanha 'Winter Sale' concluída",
+            "emails_sent_success": "156 e-mails enviados com sucesso",
+            "csv_import": "Importação CSV: 45 contatos adicionados"
+        },
+        "time": {
+            "min_ago": "{{count}} min atrás",
+            "hour_ago": "{{count}} hora atrás",
+            "hours_ago": "{{count}} horas atrás",
+            "yesterday": "Ontem"
+        },
+        "no_activity": "Nenhuma atividade recente"
     },
     "contacts": {
         "title": "Contatos",
