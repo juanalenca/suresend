@@ -42,19 +42,11 @@ export default function NewCampaign() {
 
             const campaign = await res.json()
 
-            // 2. Send if requested
+            // 2. Send if requested (Instant redirection pattern)
             if (sendNow) {
-                const sendRes = await fetch(`http://localhost:3000/campaigns/${campaign.id}/send`, {
-                    method: 'POST'
-                })
-                if (!sendRes.ok) throw new Error('Failed to send campaign')
-
-                toast({
-                    title: t('campaigns.new.success_send_title'),
-                    description: t('campaigns.new.success_send_desc')
-                })
-                // Redirect to progress page
-                navigate(`/campaigns/${campaign.id}/progress`)
+                // We don't call /send here anymore. 
+                // The destination page handles it via autoStart state.
+                navigate(`/campaigns/${campaign.id}/live`, { state: { autoStart: true } })
                 return
             } else {
                 toast({
@@ -87,8 +79,8 @@ export default function NewCampaign() {
                         <h1 className="text-4xl font-bold text-white">{t('campaigns.new.title')}</h1>
                     </div>
                     <div className="flex gap-3">
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             onClick={() => navigate('/campaigns')}
                             disabled={loading}
                         >

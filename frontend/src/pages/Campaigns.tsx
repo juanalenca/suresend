@@ -38,9 +38,10 @@ export function Campaigns() {
     const { toast } = useToast()
 
     // Confirmation states
-    const [isSendConfirmOpen, setIsSendConfirmOpen] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-    const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+    const [campaignToSend, setCampaignToSend] = useState<Campaign | null>(null);
+    const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null); // Keep for delete
 
     const loadCampaigns = useCallback(() => {
         setLoading(true)
@@ -63,39 +64,24 @@ export function Campaigns() {
         loadCampaigns();
     }, [loadCampaigns]);
 
-    const handleConfirmSend = async () => {
-        if (!selectedCampaignId) return;
-        const id = selectedCampaignId;
-        setIsSendConfirmOpen(false);
-        setSelectedCampaignId(null);
+    const handleConfirmSend = () => {
+        console.log("🖱️ Tentando enviar...", campaignToSend); // DEBUG
 
-        // --- Optimistic UI Update ---
-        setData(prev => prev.map(c =>
-            c.id === id ? { ...c, status: 'RUNNING' } : c
-        ));
-
-        try {
-            const res = await fetch(`http://localhost:3000/campaigns/${id}/send`, {
-                method: 'POST'
-            });
-
-            if (!res.ok) throw new Error('Failed to send');
-
-            toast({
-                title: t('campaigns.success_send_title'),
-                description: t('campaigns.success_send_desc'),
-            });
-
-            // Re-fetch to sync with backend
-            loadCampaigns();
-        } catch (error) {
-            toast({
-                variant: "destructive",
-                title: t('campaigns.error_send_title', { defaultValue: "Erro ao enviar" }),
-                description: t('campaigns.error_send_desc', { defaultValue: "Não foi possível iniciar o envio da campanha." }),
-            });
-            loadCampaigns(); // Revert state on error
+        if (!campaignToSend) {
+            console.error("❌ ERRO: campaignToSend está nulo!");
+            return;
         }
+
+        const targetId = campaignToSend.id;
+        console.log("✅ ID Capturado:", targetId);
+
+        // 1. NAVEGAÇÃO FORCE-PUSH (PRIORIDADE MÁXIMA)
+        // Passamos 'autoStart: true' para que a tela de destino saiba que deve chamar a API.
+        navigate(`/campaigns/${targetId}/live`, { state: { autoStart: true } });
+
+        // 2. Limpeza e fechamento
+        setIsConfirmOpen(false);
+        setCampaignToSend(null);
     };
 
     const handleConfirmDelete = async () => {
@@ -241,8 +227,8 @@ export function Campaigns() {
                                                     variant="ghost"
                                                     className="h-8 w-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10"
                                                     onClick={() => {
-                                                        setSelectedCampaignId(campaign.id);
-                                                        setIsSendConfirmOpen(true);
+                                                        setCampaignToSend(campaign);
+                                                        setIsConfirmOpen(true);
                                                     }}
                                                     title={t('buttons.send', { defaultValue: "Enviar" })}
                                                 >
@@ -271,7 +257,7 @@ export function Campaigns() {
             </div>
 
             {/* SEND CONFIRMATION MODAL */}
-            <Dialog open={isSendConfirmOpen} onOpenChange={setIsSendConfirmOpen}>
+            <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
                 <DialogContent className="bg-slate-900 border-slate-800 text-white">
                     <DialogHeader>
                         <div className="mx-auto w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4">
@@ -286,13 +272,15 @@ export function Campaigns() {
                     </DialogHeader>
                     <DialogFooter className="flex gap-3 sm:justify-center mt-4">
                         <Button
+                            type="button"
                             variant="ghost"
-                            onClick={() => setIsSendConfirmOpen(false)}
+                            onClick={() => setIsConfirmOpen(false)}
                             className="flex-1 hover:bg-slate-800 text-slate-400"
                         >
                             {t('buttons.cancel')}
                         </Button>
                         <Button
+                            type="button"
                             onClick={handleConfirmSend}
                             className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
                         >
@@ -328,7 +316,7 @@ export function Campaigns() {
                             onClick={handleConfirmDelete}
                             className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold"
                         >
-                            {t('buttons.delete', { defaultValue: "Excluir" })}
+                            {t('buttons.delete')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

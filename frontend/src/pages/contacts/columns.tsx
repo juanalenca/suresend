@@ -1,5 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Trash2 } from "lucide-react"
 
 export type Contact = {
     id: string
@@ -12,7 +14,7 @@ export type Contact = {
 
 import { TFunction } from "i18next";
 
-export const getColumns = (t: TFunction): ColumnDef<Contact>[] => [
+export const getColumns = (t: TFunction, onDelete?: (contact: Contact) => void): ColumnDef<Contact>[] => [
     {
         accessorKey: "name",
         header: t('contacts.columns.name'),
@@ -50,4 +52,25 @@ export const getColumns = (t: TFunction): ColumnDef<Contact>[] => [
             )
         },
     },
+    {
+        id: "actions",
+        header: () => <div className="text-right">{t('contacts.columns.actions', { defaultValue: 'Ações' })}</div>,
+        cell: ({ row }) => {
+            const contact = row.original
+            return (
+                <div className="flex justify-end">
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                        onClick={() => onDelete?.(contact)}
+                        title={t('buttons.delete', { defaultValue: 'Excluir' })}
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
+                </div>
+            )
+        },
+    },
 ]
+

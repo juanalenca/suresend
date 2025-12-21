@@ -136,7 +136,8 @@ export async function campaignsRoutes(app: FastifyInstance) {
                 recentLogs: campaign.emailLogs.map(log => ({
                     email: log.contact.email,
                     status: log.status,
-                    time: log.createdAt
+                    time: log.createdAt,
+                    error: log.status === 'FAILED' ? log.messageId : null
                 }))
             };
 

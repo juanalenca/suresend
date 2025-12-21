@@ -33,7 +33,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="/contacts" element={<Contacts />} />
               <Route path="/campaigns" element={<Campaigns />} />
               <Route path="/campaigns/new" element={<NewCampaign />} />
-              <Route path="/campaigns/:id/progress" element={<CampaignProgress />} />
+              <Route path="/campaigns/:id/live" element={<CampaignProgress />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
           </Route>

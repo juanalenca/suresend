@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ interface Log {
     email: string;
     status: string;
     time: string;
+    error?: string;
 }
 
 interface Stats {
@@ -25,6 +26,7 @@ export default function CampaignProgress() {
     const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [stats, setStats] = useState<Stats | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -48,14 +50,27 @@ export default function CampaignProgress() {
             }
         };
 
-        // Initial fetch
+        // Trigger campaign send if passed via navigation state
+        const triggerSend = async () => {
+            if (location.state?.autoStart) {
+                try {
+                    await fetch(`http://localhost:3000/campaigns/${id}/send`, { method: 'POST' });
+                    // Clear state to avoid re-triggering on refresh
+                    navigate(location.pathname, { replace: true, state: {} });
+                } catch (error) {
+                    console.error("Error triggering campaign send:", error);
+                }
+            }
+        };
+
+        triggerSend();
         fetchStats();
 
         // Interval
         intervalId = setInterval(fetchStats, 2000);
 
         return () => clearInterval(intervalId);
-    }, [id]);
+    }, [id, location.state, location.pathname, navigate]);
 
     // Auto-scroll logs
     useEffect(() => {
@@ -91,7 +106,7 @@ export default function CampaignProgress() {
                         </div>
                     </div>
                     {stats.status === 'COMPLETED' && (
-                        <Button 
+                        <Button
                             onClick={() => navigate('/campaigns')}
                             className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
                         >
@@ -113,19 +128,19 @@ export default function CampaignProgress() {
                     <div className="mt-6 flex items-center justify-center gap-2">
                         {(stats.status === 'PROCESSING' || stats.status === 'RUNNING') && (
                             <span className="text-violet-400 flex items-center gap-2 text-lg font-semibold">
-                                <Loader2 className="w-5 h-5 animate-spin" /> 
+                                <Loader2 className="w-5 h-5 animate-spin" />
                                 {t('campaigns.progress.sending')}
                             </span>
                         )}
                         {stats.status === 'COMPLETED' && (
                             <span className="text-emerald-400 flex items-center gap-2 text-lg font-semibold">
-                                <CheckCircle className="w-5 h-5" /> 
+                                <CheckCircle className="w-5 h-5" />
                                 {t('campaigns.progress.completed')}
                             </span>
                         )}
                         {stats.status === 'FAILED' && (
                             <span className="text-red-400 flex items-center gap-2 text-lg font-semibold">
-                                <XCircle className="w-5 h-5" /> 
+                                <XCircle className="w-5 h-5" />
                                 {t('campaigns.progress.failed')}
                             </span>
                         )}
@@ -145,7 +160,7 @@ export default function CampaignProgress() {
                         <div className="text-3xl font-bold text-white">{stats.total}</div>
                     </CardContent>
                 </Card>
-                
+
                 <Card className="bg-slate-900/50 border-slate-800/50 backdrop-blur-xl hover:-translate-y-1 transition-all duration-300">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-400">
@@ -156,7 +171,7 @@ export default function CampaignProgress() {
                         <div className="text-3xl font-bold text-white">{stats.sent}</div>
                     </CardContent>
                 </Card>
-                
+
                 <Card className="bg-slate-900/50 border-slate-800/50 backdrop-blur-xl hover:-translate-y-1 transition-all duration-300">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-red-400">
@@ -190,7 +205,7 @@ export default function CampaignProgress() {
                                         [{new Date(log.time).toLocaleTimeString()}]
                                     </span>
                                     <span className={log.status === 'SENT' ? 'text-emerald-500' : 'text-red-500'}>
-                                        {log.status === 'SENT' ? '✓ SENT' : '⨯ FAIL'}
+                                        {log.status === 'SENT' ? '✓ SENT' : `⨯ FAIL ${log.error ? `- ${log.error}` : ''}`}
                                     </span>
                                     <span className="text-slate-300 truncate">{log.email}</span>
                                 </div>

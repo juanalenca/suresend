@@ -35,6 +35,34 @@ export async function contactsRoutes(app: FastifyInstance) {
         }
     });
 
+    // DELETE /contacts/:id - Delete a contact (with cascade delete of related records)
+    app.delete('/:id', async (request, reply) => {
+        const { id } = request.params as { id: string };
+
+        try {
+            // Use a transaction to ensure data integrity
+            await prisma.$transaction(async (tx) => {
+                // First, delete all related EmailLog records
+                await tx.emailLog.deleteMany({
+                    where: { contactId: id }
+                });
+
+                // Then, delete the contact itself
+                await tx.contact.delete({
+                    where: { id }
+                });
+            });
+
+            return { message: 'Contact deleted successfully' };
+        } catch (error: any) {
+            if (error.code === 'P2025') {
+                return reply.status(404).send({ message: 'Contact not found' });
+            }
+            app.log.error(error);
+            return reply.status(500).send({ message: 'Error deleting contact' });
+        }
+    });
+
     // POST /contacts - Create single
     app.post('/', async (request, reply) => {
         const { email, name, tags } = request.body as { email: string; name?: string; tags?: string[] };
