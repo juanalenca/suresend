@@ -21,18 +21,40 @@ export async function campaignsRoutes(app: FastifyInstance) {
         return user;
     };
 
-    // GET /campaigns - List all
+    // GET /campaigns - List with pagination
     app.get('/', async (request, reply) => {
         try {
+            const { page, limit } = request.query as { page?: string; limit?: string };
+
+            // Parse pagination params (defaults: page 1, limit 10)
+            const pageNum = parseInt(page || '1', 10);
+            const limitNum = parseInt(limit || '10', 10);
+            const skip = (pageNum - 1) * limitNum;
+
+            // Get total count for pagination metadata
+            const total = await prisma.campaign.count();
+
             const campaigns = await prisma.campaign.findMany({
                 orderBy: { createdAt: 'desc' },
+                skip,
+                take: limitNum,
                 include: {
                     _count: {
                         select: { emailLogs: true }
                     }
                 }
             });
-            return campaigns;
+
+            // Return paginated response with metadata
+            return {
+                data: campaigns,
+                meta: {
+                    total,
+                    totalPages: Math.ceil(total / limitNum),
+                    page: pageNum,
+                    limit: limitNum
+                }
+            };
         } catch (error) {
             app.log.error(error);
             return reply.status(500).send({ message: 'Error fetching campaigns' });

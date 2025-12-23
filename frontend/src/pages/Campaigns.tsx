@@ -39,6 +39,11 @@ export function Campaigns() {
     const { toast } = useToast()
     const [timeFormat, setTimeFormat] = useState<string | null>(() => localStorage.getItem('timeFormat'));
 
+    // Pagination state
+    const [pageIndex, setPageIndex] = useState(0)
+    const [pageCount, setPageCount] = useState(0)
+    const pageSize = 10
+
     // Listen for time format preference changes
     useEffect(() => {
         const handleTimeFormatChange = () => {
@@ -71,26 +76,27 @@ export function Campaigns() {
     const [campaignToSend, setCampaignToSend] = useState<Campaign | null>(null);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
 
-    const loadCampaigns = useCallback((silent = false) => {
+    const loadCampaigns = useCallback((page: number, silent = false) => {
         if (!silent) setLoading(true)
-        fetch('http://localhost:3000/campaigns')
+        fetch(`http://localhost:3000/campaigns?page=${page + 1}&limit=${pageSize}`)
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch')
                 return res.json()
             })
-            .then(data => {
-                setData(data)
+            .then(result => {
+                setData(result.data)
+                setPageCount(result.meta.totalPages)
             })
             .catch(err => {
                 console.error('Error loading campaigns:', err)
                 setData([])
             })
             .finally(() => setLoading(false))
-    }, []);
+    }, [pageSize]);
 
     useEffect(() => {
-        loadCampaigns();
-    }, [loadCampaigns]);
+        loadCampaigns(pageIndex);
+    }, [pageIndex, loadCampaigns]);
 
     // Auto-refresh when there are active campaigns (SCHEDULED, RUNNING, PROCESSING)
     useEffect(() => {
@@ -101,11 +107,11 @@ export function Campaigns() {
         if (!hasActiveCampaigns) return;
 
         const interval = setInterval(() => {
-            loadCampaigns(true); // Silent refresh (no loading spinner)
+            loadCampaigns(pageIndex, true); // Silent refresh (no loading spinner)
         }, 5000); // Refresh every 5 seconds
 
         return () => clearInterval(interval);
-    }, [data, loadCampaigns]);
+    }, [data, loadCampaigns, pageIndex]);
 
     const handleConfirmSend = () => {
         console.log("🖱️ Tentando enviar...", campaignToSend); // DEBUG
@@ -148,14 +154,14 @@ export function Campaigns() {
                 description: t('campaigns.success_delete_desc'),
             });
 
-            loadCampaigns();
+            loadCampaigns(pageIndex);
         } catch (error) {
             toast({
                 variant: "destructive",
                 title: t('campaigns.error_delete_title', { defaultValue: "Erro ao excluir" }),
                 description: t('campaigns.error_delete_desc', { defaultValue: "Não foi possível excluir a campanha." }),
             });
-            loadCampaigns(); // Revert state on error
+            loadCampaigns(pageIndex); // Revert state on error
         }
     };
 
@@ -192,7 +198,7 @@ export function Campaigns() {
                 description: t('campaigns.success_cancel_schedule_desc', { defaultValue: 'A campanha voltou para rascunho.' }),
             });
 
-            loadCampaigns();
+            loadCampaigns(pageIndex);
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -351,6 +357,33 @@ export function Campaigns() {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Pagination Controls */}
+            {!loading && data.length > 0 && (
+                <div className="flex items-center justify-end space-x-2 mt-1">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPageIndex(prev => prev - 1)}
+                        disabled={pageIndex === 0}
+                        className="bg-slate-800 text-white border border-slate-700 hover:bg-slate-700 hover:text-white"
+                    >
+                        {t('pagination.previous')}
+                    </Button>
+                    <div className="text-sm text-slate-400">
+                        {t('pagination.page_of', { current: pageIndex + 1, total: pageCount || 1 })}
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPageIndex(prev => prev + 1)}
+                        disabled={pageIndex >= pageCount - 1}
+                        className="bg-slate-800 text-white border border-slate-700 hover:bg-slate-700 hover:text-white"
+                    >
+                        {t('pagination.next')}
+                    </Button>
+                </div>
+            )}
 
             {/* SEND CONFIRMATION MODAL */}
             <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
