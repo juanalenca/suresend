@@ -11,6 +11,7 @@ export function Settings() {
     const { t, i18n } = useTranslation();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [timeFormat, setTimeFormat] = useState<string | null>(() => localStorage.getItem('timeFormat'));
     const [formData, setFormData] = useState({
         host: '',
         port: '',
@@ -95,7 +96,8 @@ export function Settings() {
                         <CardTitle>{t('settings.preferences')}</CardTitle>
                         <CardDescription>{t('settings.preferences_desc')}</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-6">
+                        {/* Language Selector */}
                         <div className="space-y-2">
                             <Label>{t('settings.language')}</Label>
                             <Select
@@ -110,6 +112,60 @@ export function Settings() {
                                     <SelectItem value="en">🇺🇸 English</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+
+                        {/* Time Format Selector */}
+                        <div className="space-y-2">
+                            <Label>{t('settings.time_format')}</Label>
+                            <p className="text-xs text-slate-500 mb-2">{t('settings.time_format_hint')}</p>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setTimeFormat('24h');
+                                        localStorage.setItem('timeFormat', '24h');
+                                        window.dispatchEvent(new Event('timeFormatChanged'));
+                                        toast({
+                                            title: t('settings.success_title'),
+                                            description: t('settings.time_format_updated'),
+                                        });
+                                    }}
+                                    className={`
+                                        flex-1 py-3 px-4 rounded-xl border-2 transition-all duration-200
+                                        flex flex-col items-center gap-1
+                                        ${timeFormat === '24h' || (!timeFormat && i18n.language === 'pt')
+                                            ? 'border-amber-500 bg-amber-500/10 text-amber-400'
+                                            : 'border-slate-700 bg-slate-950/50 text-slate-400 hover:border-slate-600'
+                                        }
+                                    `}
+                                >
+                                    <span className="text-2xl font-mono font-bold">14:30</span>
+                                    <span className="text-xs">{t('settings.format_24h')}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setTimeFormat('12h');
+                                        localStorage.setItem('timeFormat', '12h');
+                                        window.dispatchEvent(new Event('timeFormatChanged'));
+                                        toast({
+                                            title: t('settings.success_title'),
+                                            description: t('settings.time_format_updated'),
+                                        });
+                                    }}
+                                    className={`
+                                        flex-1 py-3 px-4 rounded-xl border-2 transition-all duration-200
+                                        flex flex-col items-center gap-1
+                                        ${timeFormat === '12h' || (!timeFormat && i18n.language === 'en')
+                                            ? 'border-amber-500 bg-amber-500/10 text-amber-400'
+                                            : 'border-slate-700 bg-slate-950/50 text-slate-400 hover:border-slate-600'
+                                        }
+                                    `}
+                                >
+                                    <span className="text-2xl font-mono font-bold">2:30 PM</span>
+                                    <span className="text-xs">{t('settings.format_12h')}</span>
+                                </button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

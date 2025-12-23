@@ -11,6 +11,9 @@ import { unsubscribeRoutes } from './modules/contacts/unsubscribe.routes';
 import { authRoutes } from './modules/auth/auth.routes';
 import cors from '@fastify/cors';
 
+// Initialize BullMQ Worker (auto-starts listening for jobs)
+import './lib/campaignWorker';
+
 // Inicializa o Servidor e o Banco
 const app = Fastify({ logger: true });
 const prisma = new PrismaClient();

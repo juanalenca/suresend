@@ -18,7 +18,8 @@
         "import": "Importar",
         "save_settings": "Salvar Configurações",
         "saving": "Salvando...",
-        "back_to_campaigns": "Voltar para Campanhas"
+        "back_to_campaigns": "Voltar para Campanhas",
+        "schedule_send": "Agendar Envio"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -47,16 +48,25 @@
         "welcome_desc": "Comece adicionando seu primeiro contato ou criando uma campanha. Seu dashboard ganha vida com insights e análises.",
         "add_contact": "Adicionar Contato",
         "activity": {
-            "new_contact_added": "Novo contato adicionado: john@example.com",
-            "campaign_completed": "Campanha 'Winter Sale' concluída",
-            "emails_sent_success": "156 e-mails enviados com sucesso",
-            "csv_import": "Importação CSV: 45 contatos adicionados"
+            "contact_added": "{{name}} adicionado à sua lista",
+            "campaign_completed": "Campanha \"{{name}}\" concluída",
+            "campaign_sending": "Campanha \"{{name}}\" enviando",
+            "campaign_failed": "Campanha \"{{name}}\" falhou",
+            "campaign_queued": "Campanha \"{{name}}\" na fila",
+            "campaign_scheduled": "Campanha \"{{name}}\"",
+            "campaign_default": "Campanha \"{{name}}\"",
+            "sent_to": "Enviado para {{count}} contatos",
+            "sent_so_far": "{{count}} enviados até agora...",
+            "check_smtp": "Verifique suas configurações SMTP",
+            "waiting_to_start": "Aguardando início"
         },
         "time": {
+            "just_now": "Agora mesmo",
             "min_ago": "{{count}} min atrás",
-            "hour_ago": "{{count}} hora atrás",
+            "hour_ago": "1 hora atrás",
             "hours_ago": "{{count}} horas atrás",
-            "yesterday": "Ontem"
+            "yesterday": "Ontem",
+            "days_ago": "{{count}} dias atrás"
         },
         "no_activity": "Nenhuma atividade recente"
     },
@@ -135,6 +145,7 @@
             "PENDING": "Pendente",
             "RUNNING": "Enviando",
             "PROCESSING": "Processando",
+            "SCHEDULED": "Agendado",
             "COMPLETED": "Concluído",
             "FAILED": "Falhou"
         },
@@ -150,13 +161,32 @@
             "failures": "Falhas",
             "live_logs": "Logs em Tempo Real",
             "waiting_logs": "Processo iniciado... aguardando logs."
-        }
+        },
+        "schedule": {
+            "toggle_label": "Agendar para depois?",
+            "date_label": "Data de Envio",
+            "time_label": "Horário",
+            "preview": "Será enviado em {{date}} às {{time}}",
+            "past_error": "A data não pode ser no passado"
+        },
+        "cancel_schedule": "Cancelar Agendamento",
+        "confirm_cancel_schedule_title": "Cancelar Agendamento",
+        "confirm_cancel_schedule_desc": "Deseja cancelar o agendamento? A campanha voltará ao status de rascunho.",
+        "success_schedule_title": "Campanha Agendada! ⏰",
+        "success_schedule_desc": "Sua campanha será enviada automaticamente no horário programado.",
+        "success_cancel_schedule_title": "Agendamento cancelado",
+        "success_cancel_schedule_desc": "A campanha voltou para rascunho."
     },
     "settings": {
         "title": "Configurações",
         "preferences": "Preferências",
         "preferences_desc": "Personalize sua experiência.",
         "language": "Idioma",
+        "time_format": "Formato de Horário",
+        "time_format_hint": "Escolha como deseja visualizar os horários no sistema.",
+        "time_format_updated": "Formato de horário atualizado!",
+        "format_24h": "24 horas",
+        "format_12h": "12 horas (AM/PM)",
         "smtp_title": "Configurações de Envio (SMTP)",
         "smtp_desc": "Configure seu próprio servidor de e-mail para disparos.",
         "host": "SMTP Host",

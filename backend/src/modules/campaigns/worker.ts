@@ -17,18 +17,17 @@ export async function processCampaignSending(campaignId: string) {
             return;
         }
 
-        // --- CONCURRENCY PROTECTION ---
-        // If already processing, do not start another worker instance
-        if (campaign.status === 'PROCESSING') {
-            console.warn(`[Worker] Campaign ${campaignId} is already being processed. Aborting new instance.`);
-            return;
-        }
+        // Note: PROCESSING check removed because BullMQ already handles concurrency
+        // and sets status to PROCESSING before calling this function
+        // Valid states to process: DRAFT, SCHEDULED, or already PROCESSING (from BullMQ)
 
-        // 2. Update status to PROCESSING
-        await prisma.campaign.update({
-            where: { id: campaignId },
-            data: { status: 'PROCESSING' }
-        });
+        // 2. Update status to PROCESSING (if not already set by BullMQ worker)
+        if (campaign.status !== 'PROCESSING') {
+            await prisma.campaign.update({
+                where: { id: campaignId },
+                data: { status: 'PROCESSING' }
+            });
+        }
 
         // 3. Fetch All Subscribed Contacts
         const contacts = await prisma.contact.findMany({

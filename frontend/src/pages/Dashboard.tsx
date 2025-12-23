@@ -25,16 +25,19 @@ import {
   ResponsiveContainer,
 } from "recharts"
 
-// Types for activity data from API (new human-readable format)
+// Types for activity data from API (structured for i18n)
 interface ActivityItem {
   id: string
   type: 'contact_added' | 'campaign'
   iconType: 'user_plus' | 'send' | 'check_circle' | 'alert_circle' | 'clock'
-  text: string
-  subtext: string
-  link: string
-  timeAgo: string
+  // Structured data for translation
+  name: string
+  email?: string
   status?: string
+  sentCount?: number
+  link: string
+  timeAgoKey: string
+  timeAgoCount: number
 }
 
 // Types for chart data from API
@@ -95,6 +98,78 @@ const mergeChartData = (apiData: ChartDataPoint[]): ChartDataPoint[] => {
 export function Dashboard() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+
+  // Helper function to get translated text for activity
+  const getActivityText = (activity: ActivityItem): { text: string; subtext: string } => {
+    if (activity.type === 'contact_added') {
+      return {
+        text: t('dashboard.activity.contact_added', { name: activity.name }),
+        subtext: activity.email || ''
+      };
+    }
+
+    // Campaign activities
+    const name = activity.name;
+    const count = activity.sentCount || 0;
+    const status = activity.status || '';
+
+    switch (status) {
+      case 'COMPLETED':
+        return {
+          text: t('dashboard.activity.campaign_completed', { name }),
+          subtext: t('dashboard.activity.sent_to', { count })
+        };
+      case 'RUNNING':
+      case 'PROCESSING':
+        return {
+          text: t('dashboard.activity.campaign_sending', { name }),
+          subtext: t('dashboard.activity.sent_so_far', { count })
+        };
+      case 'FAILED':
+        return {
+          text: t('dashboard.activity.campaign_failed', { name }),
+          subtext: t('dashboard.activity.check_smtp')
+        };
+      case 'PENDING':
+        return {
+          text: t('dashboard.activity.campaign_queued', { name }),
+          subtext: t('dashboard.activity.waiting_to_start')
+        };
+      case 'SCHEDULED':
+        return {
+          text: t('dashboard.activity.campaign_scheduled', { name }),
+          subtext: status
+        };
+      default:
+        return {
+          text: t('dashboard.activity.campaign_default', { name }),
+          subtext: status
+        };
+    }
+  };
+
+  // Helper function to get translated time ago
+  const getTimeAgo = (activity: ActivityItem): string => {
+    const key = activity.timeAgoKey;
+    const count = activity.timeAgoCount;
+
+    switch (key) {
+      case 'just_now':
+        return t('dashboard.time.just_now');
+      case 'min_ago':
+        return t('dashboard.time.min_ago', { count });
+      case 'hour_ago':
+        return t('dashboard.time.hour_ago', { count });
+      case 'hours_ago':
+        return t('dashboard.time.hours_ago', { count });
+      case 'yesterday':
+        return t('dashboard.time.yesterday');
+      case 'days_ago':
+        return t('dashboard.time.days_ago', { count });
+      default:
+        return key;
+    }
+  };
 
   // Dashboard data from API
   const [summary, setSummary] = useState<DashboardSummary>({
@@ -429,14 +504,14 @@ export function Dashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-slate-900 font-medium truncate">
-                      {activity.text}
+                      {getActivityText(activity).text}
                     </p>
                     <p className="text-xs text-slate-500 truncate">
-                      {activity.subtext}
+                      {getActivityText(activity).subtext}
                     </p>
                   </div>
                   <div className="text-xs text-slate-400 flex-shrink-0">
-                    {activity.timeAgo}
+                    {getTimeAgo(activity)}
                   </div>
                 </div>
               ))

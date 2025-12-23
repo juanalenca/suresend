@@ -98,64 +98,36 @@ export async function dashboardRoutes(app: FastifyInstance) {
                 }
             });
 
-            // Format contact activities with human-readable messages
+            // Format contact activities with structured data for i18n
             const contactActivities = recentContacts.map(c => {
                 const displayName = c.name || c.email.split('@')[0];
                 return {
                     id: c.id,
                     type: 'contact_added' as const,
-                    iconType: 'user_plus', // Frontend will use UserPlus icon
-                    text: `${displayName} added to your list`,
-                    subtext: c.email,
+                    iconType: 'user_plus',
+                    // Structured data for translation
+                    name: displayName,
+                    email: c.email,
                     link: `/contacts`,
                     createdAt: c.createdAt
                 };
             });
 
-            // Format campaign activities with contextual messages
+            // Format campaign activities with structured data for i18n
             const campaignActivities = recentCampaigns.map(c => {
                 const campaignName = c.name || c.subject || 'Untitled';
-
-                let text = '';
-                let subtext = '';
-                let iconType = 'send';
-
-                switch (c.status) {
-                    case 'COMPLETED':
-                        text = `Campaign "${campaignName}" completed`;
-                        subtext = `Sent to ${c.sentCount} contact${c.sentCount !== 1 ? 's' : ''}`;
-                        iconType = 'check_circle';
-                        break;
-                    case 'RUNNING':
-                    case 'PROCESSING':
-                        text = `Campaign "${campaignName}" is sending`;
-                        subtext = `${c.sentCount} sent so far...`;
-                        iconType = 'send';
-                        break;
-                    case 'FAILED':
-                        text = `Campaign "${campaignName}" failed`;
-                        subtext = 'Check your SMTP settings';
-                        iconType = 'alert_circle';
-                        break;
-                    case 'PENDING':
-                        text = `Campaign "${campaignName}" queued`;
-                        subtext = 'Waiting to start';
-                        iconType = 'clock';
-                        break;
-                    default:
-                        text = `Campaign "${campaignName}"`;
-                        subtext = c.status;
-                        iconType = 'send';
-                }
 
                 return {
                     id: c.id,
                     type: 'campaign' as const,
-                    iconType,
-                    text,
-                    subtext,
-                    link: `/campaigns`,
+                    iconType: c.status === 'COMPLETED' ? 'check_circle' :
+                        c.status === 'FAILED' ? 'alert_circle' :
+                            c.status === 'PENDING' || c.status === 'SCHEDULED' ? 'clock' : 'send',
+                    // Structured data for translation
+                    name: campaignName,
                     status: c.status,
+                    sentCount: c.sentCount,
+                    link: `/campaigns`,
                     createdAt: c.createdAt
                 };
             });
@@ -165,7 +137,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
                 .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                 .slice(0, 5)
                 .map(activity => {
-                    // Calculate human-readable relative time
+                    // Calculate human-readable relative time key
                     const now = new Date();
                     const activityDate = new Date(activity.createdAt);
                     const diffMs = now.getTime() - activityDate.getTime();
@@ -173,25 +145,28 @@ export async function dashboardRoutes(app: FastifyInstance) {
                     const diffHours = Math.floor(diffMs / 3600000);
                     const diffDays = Math.floor(diffMs / 86400000);
 
-                    let timeAgo = '';
+                    // Return structured time data for frontend translation
+                    let timeAgoKey = '';
+                    let timeAgoCount = 0;
+
                     if (diffDays >= 1) {
-                        timeAgo = diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+                        timeAgoKey = diffDays === 1 ? 'yesterday' : 'days_ago';
+                        timeAgoCount = diffDays;
                     } else if (diffHours >= 1) {
-                        timeAgo = diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+                        timeAgoKey = diffHours === 1 ? 'hour_ago' : 'hours_ago';
+                        timeAgoCount = diffHours;
                     } else if (diffMins >= 1) {
-                        timeAgo = diffMins === 1 ? '1 min ago' : `${diffMins} mins ago`;
+                        timeAgoKey = 'min_ago';
+                        timeAgoCount = diffMins;
                     } else {
-                        timeAgo = 'Just now';
+                        timeAgoKey = 'just_now';
+                        timeAgoCount = 0;
                     }
 
                     return {
-                        id: activity.id,
-                        type: activity.type,
-                        iconType: activity.iconType,
-                        text: activity.text,
-                        subtext: activity.subtext,
-                        link: activity.link,
-                        timeAgo
+                        ...activity,
+                        timeAgoKey,
+                        timeAgoCount
                     };
                 });
 

@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { processCampaignSending } from './worker';
+import { campaignQueue } from '../../lib/queue';
 
 const prisma = new PrismaClient();
 
@@ -38,9 +39,14 @@ export async function campaignsRoutes(app: FastifyInstance) {
         }
     });
 
-    // POST /campaigns - Create Draft
+    // POST /campaigns - Create Draft or Scheduled
     app.post('/', async (request, reply) => {
-        const { name, subject, body } = request.body as { name: string; subject: string; body: string };
+        const { name, subject, body, scheduledAt } = request.body as {
+            name: string;
+            subject: string;
+            body: string;
+            scheduledAt?: string; // ISO 8601 date string (UTC from frontend)
+        };
 
         if (!name || !subject) {
             return reply.status(400).send({ message: 'Name and Subject are required' });
@@ -49,15 +55,35 @@ export async function campaignsRoutes(app: FastifyInstance) {
         try {
             const user = await getDefaultUser();
 
+            // Determine status based on scheduledAt
+            const isScheduled = !!scheduledAt;
+            const scheduledDate = isScheduled ? new Date(scheduledAt) : null;
+
             const campaign = await prisma.campaign.create({
                 data: {
+                    name: name || null,
                     subject,
                     body: body || '',
-                    status: 'DRAFT',
+                    status: isScheduled ? 'SCHEDULED' : 'DRAFT',
+                    scheduledAt: scheduledDate,
                     userId: user.id
-                    // Todo: add 'name' to schema to save internal name
                 }
             });
+
+            // If scheduled, add job to queue with delay
+            if (isScheduled && scheduledDate) {
+                const delay = scheduledDate.getTime() - Date.now();
+                await campaignQueue.add(
+                    'send-campaign',
+                    { campaignId: campaign.id },
+                    {
+                        delay: Math.max(delay, 0), // Ensure non-negative delay
+                        jobId: `campaign-${campaign.id}` // Named job for easy cancellation
+                    }
+                );
+                console.log(`[Scheduler] 📅 Campaign ${campaign.id} scheduled for ${scheduledDate.toISOString()} (delay: ${delay}ms)`);
+            }
+
             return campaign;
         } catch (error) {
             app.log.error(error);
@@ -147,11 +173,49 @@ export async function campaignsRoutes(app: FastifyInstance) {
         }
     });
 
+    // DELETE /campaigns/:id/schedule - Cancel scheduled campaign
+    app.delete('/:id/schedule', async (request, reply) => {
+        const { id } = request.params as { id: string };
+
+        try {
+            const campaign = await prisma.campaign.findUnique({ where: { id } });
+            if (!campaign) return reply.status(404).send({ message: 'Campaign not found' });
+            if (campaign.status !== 'SCHEDULED') {
+                return reply.status(400).send({ message: 'Campaign is not scheduled' });
+            }
+
+            // Remove job from queue
+            const job = await campaignQueue.getJob(`campaign-${id}`);
+            if (job) {
+                await job.remove();
+                console.log(`[Scheduler] ❌ Cancelled scheduled job for campaign ${id}`);
+            }
+
+            // Update campaign status back to DRAFT
+            await prisma.campaign.update({
+                where: { id },
+                data: {
+                    status: 'DRAFT',
+                    scheduledAt: null
+                }
+            });
+
+            return { message: 'Schedule cancelled successfully' };
+        } catch (error) {
+            app.log.error(error);
+            return reply.status(500).send({ message: 'Error cancelling schedule' });
+        }
+    });
+
     // DELETE /campaigns/:id - Delete
     app.delete('/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
 
         try {
+            // Also remove from queue if scheduled
+            const job = await campaignQueue.getJob(`campaign-${id}`);
+            if (job) await job.remove();
+
             // First delete related logs to avoid FK constraints
             await prisma.emailLog.deleteMany({ where: { campaignId: id } });
 

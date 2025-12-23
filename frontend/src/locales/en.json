@@ -18,7 +18,8 @@
         "import": "Import",
         "save_settings": "Save Settings",
         "saving": "Saving...",
-        "back_to_campaigns": "Back to Campaigns"
+        "back_to_campaigns": "Back to Campaigns",
+        "schedule_send": "Schedule Send"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -47,16 +48,25 @@
         "welcome_desc": "Get started by adding your first contact or creating a campaign. Your dashboard will come alive with insights and analytics.",
         "add_contact": "Add Contact",
         "activity": {
-            "new_contact_added": "New contact added: john@example.com",
-            "campaign_completed": "Campaign 'Winter Sale' completed",
-            "emails_sent_success": "156 emails sent successfully",
-            "csv_import": "CSV import: 45 contacts added"
+            "contact_added": "{{name}} added to your list",
+            "campaign_completed": "Campaign \"{{name}}\" completed",
+            "campaign_sending": "Campaign \"{{name}}\" is sending",
+            "campaign_failed": "Campaign \"{{name}}\" failed",
+            "campaign_queued": "Campaign \"{{name}}\" queued",
+            "campaign_scheduled": "Campaign \"{{name}}\"",
+            "campaign_default": "Campaign \"{{name}}\"",
+            "sent_to": "Sent to {{count}} contacts",
+            "sent_so_far": "{{count}} sent so far...",
+            "check_smtp": "Check your SMTP settings",
+            "waiting_to_start": "Waiting to start"
         },
         "time": {
+            "just_now": "Just now",
             "min_ago": "{{count}} min ago",
-            "hour_ago": "{{count}} hour ago",
+            "hour_ago": "1 hour ago",
             "hours_ago": "{{count}} hours ago",
-            "yesterday": "Yesterday"
+            "yesterday": "Yesterday",
+            "days_ago": "{{count}} days ago"
         },
         "no_activity": "No recent activity"
     },
@@ -135,6 +145,7 @@
             "PENDING": "Pending",
             "RUNNING": "Sending",
             "PROCESSING": "Processing",
+            "SCHEDULED": "Scheduled",
             "COMPLETED": "Completed",
             "FAILED": "Failed"
         },
@@ -150,13 +161,32 @@
             "failures": "Failures",
             "live_logs": "Live Logs",
             "waiting_logs": "Process started... waiting for logs."
-        }
+        },
+        "schedule": {
+            "toggle_label": "Schedule for later?",
+            "date_label": "Send Date",
+            "time_label": "Time",
+            "preview": "Will be sent on {{date}} at {{time}}",
+            "past_error": "Date cannot be in the past"
+        },
+        "cancel_schedule": "Cancel Schedule",
+        "confirm_cancel_schedule_title": "Cancel Schedule",
+        "confirm_cancel_schedule_desc": "Do you want to cancel the schedule? The campaign will return to draft status.",
+        "success_schedule_title": "Campaign Scheduled! ⏰",
+        "success_schedule_desc": "Your campaign will be sent automatically at the scheduled time.",
+        "success_cancel_schedule_title": "Schedule cancelled",
+        "success_cancel_schedule_desc": "The campaign is back to draft."
     },
     "settings": {
         "title": "Settings",
         "preferences": "Preferences",
         "preferences_desc": "Customize your experience.",
         "language": "Language",
+        "time_format": "Time Format",
+        "time_format_hint": "Choose how you want to display times in the system.",
+        "time_format_updated": "Time format updated!",
+        "format_24h": "24-hour",
+        "format_12h": "12-hour (AM/PM)",
         "smtp_title": "Sending Settings (SMTP)",
         "smtp_desc": "Configure your own email server for sending.",
         "host": "SMTP Host",

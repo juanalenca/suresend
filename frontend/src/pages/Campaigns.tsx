@@ -10,7 +10,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { useTranslation } from "react-i18next"
-import { Send, Eye, Calendar, Sparkles, Plus, Play, Trash2, AlertTriangle } from "lucide-react"
+import { Send, Eye, Calendar, Sparkles, Plus, Play, Trash2, AlertTriangle, XCircle, Clock } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import {
     Dialog,
@@ -28,23 +28,51 @@ interface Campaign {
     sentCount: number
     openCount: number
     createdAt: string
+    scheduledAt?: string | null
 }
 
 export function Campaigns() {
-    const { t } = useTranslation()
+    const { t, i18n } = useTranslation()
     const [data, setData] = useState<Campaign[]>([])
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
     const { toast } = useToast()
+    const [timeFormat, setTimeFormat] = useState<string | null>(() => localStorage.getItem('timeFormat'));
+
+    // Listen for time format preference changes
+    useEffect(() => {
+        const handleTimeFormatChange = () => {
+            setTimeFormat(localStorage.getItem('timeFormat'));
+        };
+        window.addEventListener('timeFormatChanged', handleTimeFormatChange);
+        return () => window.removeEventListener('timeFormatChanged', handleTimeFormatChange);
+    }, []);
+
+    // Format date/time respecting user preferences
+    const formatScheduledDateTime = (dateString: string) => {
+        const date = new Date(dateString);
+        const locale = i18n.language === 'pt' ? 'pt-BR' : 'en-US';
+        const is12Hour = timeFormat ? timeFormat === '12h' : i18n.language === 'en';
+
+        return date.toLocaleString(locale, {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: is12Hour
+        });
+    };
 
     // Confirmation states
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [isCancelScheduleOpen, setIsCancelScheduleOpen] = useState(false);
     const [campaignToSend, setCampaignToSend] = useState<Campaign | null>(null);
-    const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null); // Keep for delete
+    const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
 
-    const loadCampaigns = useCallback(() => {
-        setLoading(true)
+    const loadCampaigns = useCallback((silent = false) => {
+        if (!silent) setLoading(true)
         fetch('http://localhost:3000/campaigns')
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch')
@@ -63,6 +91,21 @@ export function Campaigns() {
     useEffect(() => {
         loadCampaigns();
     }, [loadCampaigns]);
+
+    // Auto-refresh when there are active campaigns (SCHEDULED, RUNNING, PROCESSING)
+    useEffect(() => {
+        const hasActiveCampaigns = data.some(c =>
+            ['SCHEDULED', 'RUNNING', 'PROCESSING', 'PENDING'].includes(c.status)
+        );
+
+        if (!hasActiveCampaigns) return;
+
+        const interval = setInterval(() => {
+            loadCampaigns(true); // Silent refresh (no loading spinner)
+        }, 5000); // Refresh every 5 seconds
+
+        return () => clearInterval(interval);
+    }, [data, loadCampaigns]);
 
     const handleConfirmSend = () => {
         console.log("🖱️ Tentando enviar...", campaignToSend); // DEBUG
@@ -121,11 +164,42 @@ export function Campaigns() {
             COMPLETED: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
             RUNNING: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
             SENDING: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+            PROCESSING: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
             PENDING: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+            SCHEDULED: 'bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse',
             DRAFT: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
             FAILED: 'bg-red-500/10 text-red-500 border-red-500/20'
         };
         return styles[status as keyof typeof styles] || styles.DRAFT;
+    };
+
+    // Cancel scheduled campaign
+    const handleCancelSchedule = async () => {
+        if (!selectedCampaignId) return;
+        const id = selectedCampaignId;
+        setIsCancelScheduleOpen(false);
+        setSelectedCampaignId(null);
+
+        try {
+            const res = await fetch(`http://localhost:3000/campaigns/${id}/schedule`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) throw new Error('Failed to cancel schedule');
+
+            toast({
+                title: t('campaigns.success_cancel_schedule_title', { defaultValue: 'Agendamento cancelado' }),
+                description: t('campaigns.success_cancel_schedule_desc', { defaultValue: 'A campanha voltou para rascunho.' }),
+            });
+
+            loadCampaigns();
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: t('campaigns.error_cancel_schedule_title', { defaultValue: 'Erro ao cancelar' }),
+                description: t('campaigns.error_cancel_schedule_desc', { defaultValue: 'Não foi possível cancelar o agendamento.' }),
+            });
+        }
     };
 
     return (
@@ -197,8 +271,16 @@ export function Campaigns() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusStyles(campaign.status)}`}>
-                                            {t(`campaigns.status.${campaign.status}`) || campaign.status}
+                                        <div className="flex flex-col">
+                                            <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusStyles(campaign.status)}`}>
+                                                {t(`campaigns.status.${campaign.status}`) || campaign.status}
+                                            </div>
+                                            {campaign.status === 'SCHEDULED' && campaign.scheduledAt && (
+                                                <div className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    {formatScheduledDateTime(campaign.scheduledAt)}
+                                                </div>
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-center">
@@ -233,6 +315,20 @@ export function Campaigns() {
                                                     title={t('buttons.send', { defaultValue: "Enviar" })}
                                                 >
                                                     <Play className="w-4 h-4" />
+                                                </Button>
+                                            )}
+                                            {campaign.status === 'SCHEDULED' && (
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    className="h-8 w-8 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+                                                    onClick={() => {
+                                                        setSelectedCampaignId(campaign.id);
+                                                        setIsCancelScheduleOpen(true);
+                                                    }}
+                                                    title={t('campaigns.cancel_schedule', { defaultValue: "Cancelar Agendamento" })}
+                                                >
+                                                    <XCircle className="w-4 h-4" />
                                                 </Button>
                                             )}
                                             <Button
@@ -317,6 +413,38 @@ export function Campaigns() {
                             className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold"
                         >
                             {t('buttons.delete')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* CANCEL SCHEDULE CONFIRMATION MODAL */}
+            <Dialog open={isCancelScheduleOpen} onOpenChange={setIsCancelScheduleOpen}>
+                <DialogContent className="bg-slate-900 border-slate-800 text-white">
+                    <DialogHeader>
+                        <div className="mx-auto w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mb-4">
+                            <Clock className="w-6 h-6 text-amber-500" />
+                        </div>
+                        <DialogTitle className="text-center text-xl font-bold">
+                            {t('campaigns.confirm_cancel_schedule_title', { defaultValue: "Cancelar Agendamento" })}
+                        </DialogTitle>
+                        <DialogDescription className="text-center text-slate-400 py-2">
+                            {t('campaigns.confirm_cancel_schedule_desc', { defaultValue: "Deseja cancelar o agendamento? A campanha voltará ao status de rascunho." })}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex gap-2 sm:justify-center mt-4">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setIsCancelScheduleOpen(false)}
+                            className="flex-1 hover:bg-slate-800 text-slate-400"
+                        >
+                            {t('buttons.cancel')}
+                        </Button>
+                        <Button
+                            onClick={handleCancelSchedule}
+                            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+                        >
+                            {t('campaigns.cancel_schedule', { defaultValue: "Cancelar Agendamento" })}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
