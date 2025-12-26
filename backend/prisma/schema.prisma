@@ -78,3 +78,20 @@ model Config {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Configuração de Warmup de Domínio/IP
+model WarmupConfig {
+  id              String    @id @default(uuid())
+  userId          String?   // Preparado para multi-tenant
+  enabled         Boolean   @default(false)
+  startDate       DateTime?
+  timezone        String    @default("America/Sao_Paulo")
+  currentPhase    Int       @default(1)
+  dailyLimit      Int?      @default(50)  // null = ilimitado (fase 5)
+  sentToday       Int       @default(0)
+  lastResetDate   DateTime  @default(now())
+  autoResume      Boolean   @default(false)  // Retomada manual por padrão
+  bounceThreshold Float?    // Futuro: pausar se bounce > X%
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
