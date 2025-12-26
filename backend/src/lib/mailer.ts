@@ -45,10 +45,15 @@ export async function getTransporter() {
             maxMessages: 100, // Reuse connection for up to 100 messages
             host: settings.host,
             port: settings.port,
+            secure: settings.port === 465, // true for 465, false for other ports
             auth: {
                 user: settings.user,
                 pass: settings.pass,
             },
+            tls: {
+                // Não rejeitar certificados inválidos (necessário para alguns provedores)
+                rejectUnauthorized: false
+            }
         });
     }
 
