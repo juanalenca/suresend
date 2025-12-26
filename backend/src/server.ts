@@ -9,6 +9,7 @@ import { dashboardRoutes } from './modules/dashboard/dashboard.routes';
 import { settingsRoutes } from './modules/settings/settings.routes';
 import { unsubscribeRoutes } from './modules/contacts/unsubscribe.routes';
 import { authRoutes } from './modules/auth/auth.routes';
+import { warmupRoutes } from './modules/warmup/warmup.routes';
 import cors from '@fastify/cors';
 
 // Initialize BullMQ Worker (auto-starts listening for jobs)
@@ -34,6 +35,7 @@ app.register(dashboardRoutes, { prefix: '/dashboard' });
 app.register(settingsRoutes, { prefix: '/settings' });
 app.register(unsubscribeRoutes, { prefix: '/unsubscribe' });
 app.register(authRoutes, { prefix: '/auth' });
+app.register(warmupRoutes, { prefix: '/warmup' });
 
 // Rota 1: Teste simples (Hello World)
 app.get('/', async (request, reply) => {

@@ -1,7 +1,54 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, WarmupConfig } from '@prisma/client';
 import { getTransporter, getSmtpSettings } from '../../lib/mailer';
+import { startOfDay } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 
 const prisma = new PrismaClient();
+
+// Calcula fase e limite baseado nos dias desde o início
+function calculatePhase(days: number): { phase: number; limit: number | null } {
+    if (days >= 22) return { phase: 5, limit: null };  // Ilimitado!
+    if (days >= 15) return { phase: 4, limit: 1500 };
+    if (days >= 8) return { phase: 3, limit: 500 };
+    if (days >= 4) return { phase: 2, limit: 200 };
+    return { phase: 1, limit: 50 };
+}
+
+// Função helper para reset timezone-safe
+async function checkAndResetWarmup(warmupConfig: WarmupConfig): Promise<WarmupConfig> {
+    const tz = warmupConfig.timezone || 'America/Sao_Paulo';
+    const now = new Date();
+    const zonedNow = toZonedTime(now, tz);
+    const zonedLastReset = toZonedTime(warmupConfig.lastResetDate, tz);
+
+    const todayStart = startOfDay(zonedNow).getTime();
+    const lastResetStart = startOfDay(zonedLastReset).getTime();
+
+    // Se o dia mudou, resetar contador e atualizar fase
+    if (todayStart > lastResetStart) {
+        const daysSinceStart = warmupConfig.startDate
+            ? Math.floor((now.getTime() - warmupConfig.startDate.getTime()) / (1000 * 60 * 60 * 24))
+            : 0;
+
+        const { phase, limit } = calculatePhase(daysSinceStart);
+
+        console.log(`[Warmup] 🔄 Novo dia detectado. Atualizando para fase ${phase}, limite ${limit ?? 'ilimitado'}.`);
+
+        const updated = await prisma.warmupConfig.update({
+            where: { id: warmupConfig.id },
+            data: {
+                sentToday: 0,
+                lastResetDate: now,
+                currentPhase: phase,
+                dailyLimit: limit
+            }
+        });
+
+        return updated;
+    }
+
+    return warmupConfig;
+}
 
 export async function processCampaignSending(campaignId: string) {
     try {
@@ -45,7 +92,33 @@ export async function processCampaignSending(campaignId: string) {
         let sentCount = 0;
         let failedCount = 0;
 
+        // --- WARMUP: Buscar config ANTES do loop ---
+        let warmupConfig = await prisma.warmupConfig.findFirst();
+        if (warmupConfig?.enabled) {
+            warmupConfig = await checkAndResetWarmup(warmupConfig);
+            console.log(`[Warmup] 🔥 Warmup ativo. Fase ${warmupConfig.currentPhase}, limite ${warmupConfig.dailyLimit ?? 'ilimitado'}, enviados hoje: ${warmupConfig.sentToday}`);
+        }
+
         for (const contact of contacts) {
+            // --- WARMUP CHECK: Verificar limite antes de cada envio ---
+            if (warmupConfig?.enabled) {
+                // Fase 5 = ilimitado (dailyLimit é null)
+                if (warmupConfig.dailyLimit !== null && warmupConfig.sentToday >= warmupConfig.dailyLimit) {
+                    const resumeMsg = warmupConfig.autoResume
+                        ? 'Retomada automática amanhã.'
+                        : 'Aguardando ação manual.';
+
+                    console.log(`[Warmup] ⏸️ Limite diário de ${warmupConfig.dailyLimit} atingido na fase ${warmupConfig.currentPhase}. Campanha ${campaignId} pausada. ${resumeMsg}`);
+
+                    await prisma.campaign.update({
+                        where: { id: campaignId },
+                        data: { status: 'PAUSED' }
+                    });
+
+                    break; // Sai do loop
+                }
+            }
+
 
             try {
                 // 4.1. Create Log PENDING
@@ -92,6 +165,16 @@ export async function processCampaignSending(campaignId: string) {
                     where: { id: campaignId },
                     data: { sentCount: { increment: 1 } }
                 });
+
+                // --- WARMUP: Incrementar contador após envio bem-sucedido ---
+                if (warmupConfig?.enabled) {
+                    await prisma.warmupConfig.update({
+                        where: { id: warmupConfig.id },
+                        data: { sentToday: { increment: 1 } }
+                    });
+                    // Atualizar localmente para próxima iteração
+                    warmupConfig.sentToday++;
+                }
 
             } catch (err: any) {
                 const errorMessage = err.message || 'Unknown error';
