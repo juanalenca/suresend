@@ -146,6 +146,7 @@
             "RUNNING": "Sending",
             "PROCESSING": "Processing",
             "SCHEDULED": "Scheduled",
+            "PAUSED": "Paused",
             "COMPLETED": "Completed",
             "FAILED": "Failed"
         },
@@ -222,5 +223,34 @@
     "errors": {
         "invalid_auth": "Invalid credentials. Please check your email and password.",
         "generic": "Something went wrong. Please try again."
+    },
+    "warmup": {
+        "title": "Domain Warmup",
+        "description": "Warm up your IP progressively for better deliverability.",
+        "warning_title": "⚠️ Warmup doesn't replace a clean list!",
+        "warning_desc": "This feature limits volume but doesn't detect bounces. Use only verified lists.",
+        "enabled": "Warmup Active",
+        "phase": "Phase {{current}} of 5",
+        "unlimited": "Unlimited",
+        "resets_at": "Counter resets at midnight ({{time}})",
+        "auto_resume": "Resume automatically",
+        "auto_resume_hint": "Continue sending the next day without manual intervention",
+        "timezone": "Timezone",
+        "start_button": "Start Warmup",
+        "stop_button": "Pause Warmup",
+        "reset_button": "Reset Warmup",
+        "limit_reached_title": "Daily limit reached",
+        "limit_reached_desc_manual": "Campaign paused. Resume manually tomorrow.",
+        "limit_reached_desc_auto": "Campaign paused. Resuming automatically tomorrow.",
+        "limit_banner_title": "Daily limit reached!",
+        "limit_banner_desc": "Warmup daily limit reached. New campaigns won't send emails today.",
+        "unlimited_banner_title": "Unlimited Mode Active!",
+        "unlimited_banner_desc": "You completed the warmup! No daily limits.",
+        "completed_warmup": "Warmup complete! No limits.",
+        "next_phase": "Phase {{next}} in {{days}} days",
+        "view_settings": "View settings",
+        "campaign_paused_title": "Campaign paused",
+        "campaign_paused_auto": "Warmup daily limit reached. Resuming automatically tomorrow.",
+        "campaign_paused_manual": "Warmup daily limit reached. Resume manually tomorrow."
     }
 }

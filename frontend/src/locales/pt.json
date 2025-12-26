@@ -146,6 +146,7 @@
             "RUNNING": "Enviando",
             "PROCESSING": "Processando",
             "SCHEDULED": "Agendado",
+            "PAUSED": "Pausado",
             "COMPLETED": "Concluído",
             "FAILED": "Falhou"
         },
@@ -222,5 +223,34 @@
     "errors": {
         "invalid_auth": "Credenciais inválidas. Verifique seu e-mail e senha.",
         "generic": "Algo deu errado. Tente novamente."
+    },
+    "warmup": {
+        "title": "Warmup de Domínio",
+        "description": "Aqueça seu IP progressivamente para melhor entregabilidade.",
+        "warning_title": "⚠️ Warmup não substitui lista limpa!",
+        "warning_desc": "Este recurso limita volume, mas não detecta bounces. Use apenas listas verificadas.",
+        "enabled": "Warmup Ativo",
+        "phase": "Fase {{current}} de 5",
+        "unlimited": "Ilimitado",
+        "resets_at": "Contador reseta à meia-noite ({{time}})",
+        "auto_resume": "Retomar automaticamente",
+        "auto_resume_hint": "Continuar envio no dia seguinte sem intervenção manual",
+        "timezone": "Fuso Horário",
+        "start_button": "Iniciar Warmup",
+        "stop_button": "Pausar Warmup",
+        "reset_button": "Reiniciar Warmup",
+        "limit_reached_title": "Limite diário atingido",
+        "limit_reached_desc_manual": "Campanha pausada. Retome manualmente amanhã.",
+        "limit_reached_desc_auto": "Campanha pausada. Retomando automaticamente amanhã.",
+        "limit_banner_title": "Limite de envio atingido!",
+        "limit_banner_desc": "O limite diário do warmup foi atingido. Novas campanhas não enviarão emails hoje.",
+        "unlimited_banner_title": "Modo Ilimitado Ativo!",
+        "unlimited_banner_desc": "Você completou o warmup! Sem limites de envio diário.",
+        "completed_warmup": "Warmup concluído! Sem limites.",
+        "next_phase": "Fase {{next}} em {{days}} dias",
+        "view_settings": "Ver configurações",
+        "campaign_paused_title": "Campanha pausada",
+        "campaign_paused_auto": "Limite diário de warmup atingido. Retomada automática amanhã.",
+        "campaign_paused_manual": "Limite diário de warmup atingido. Retome manualmente amanhã."
     }
 }
