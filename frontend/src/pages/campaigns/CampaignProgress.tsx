@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CheckCircle, XCircle, Terminal, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Terminal, Sparkles, PauseCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Log {
     email: string;
@@ -29,6 +30,8 @@ export default function CampaignProgress() {
     const location = useLocation();
     const [stats, setStats] = useState<Stats | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const { toast } = useToast();
+    const [warmupToastShown, setWarmupToastShown] = useState(false);
 
     // Polling Logic
     useEffect(() => {
@@ -78,6 +81,28 @@ export default function CampaignProgress() {
             bottomRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [stats?.recentLogs]);
+
+    // Check if campaign was paused by warmup limit
+    useEffect(() => {
+        if (stats?.status === 'PAUSED' && !warmupToastShown) {
+            // Fetch warmup status to check if paused due to limit
+            fetch('http://localhost:3000/warmup')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.enabled && data.dailyLimit !== null && data.sentToday >= data.dailyLimit) {
+                        toast({
+                            title: t('warmup.campaign_paused_title'),
+                            description: data.autoResume
+                                ? t('warmup.campaign_paused_auto')
+                                : t('warmup.campaign_paused_manual'),
+                            variant: 'destructive'
+                        });
+                        setWarmupToastShown(true);
+                    }
+                })
+                .catch(() => { });
+        }
+    }, [stats?.status, warmupToastShown, toast, t]);
 
     if (!stats) {
         return (
@@ -142,6 +167,12 @@ export default function CampaignProgress() {
                             <span className="text-red-400 flex items-center gap-2 text-lg font-semibold">
                                 <XCircle className="w-5 h-5" />
                                 {t('campaigns.progress.failed')}
+                            </span>
+                        )}
+                        {stats.status === 'PAUSED' && (
+                            <span className="text-amber-400 flex items-center gap-2 text-lg font-semibold">
+                                <PauseCircle className="w-5 h-5" />
+                                {t('campaigns.status.PAUSED')}
                             </span>
                         )}
                     </div>

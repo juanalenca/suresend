@@ -10,7 +10,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { useTranslation } from "react-i18next"
-import { Send, Eye, Calendar, Sparkles, Plus, Play, Trash2, AlertTriangle, XCircle, Clock } from "lucide-react"
+import { Send, Eye, Calendar, Sparkles, Plus, Play, Trash2, AlertTriangle, XCircle, Clock, Settings } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import {
     Dialog,
@@ -76,6 +76,9 @@ export function Campaigns() {
     const [campaignToSend, setCampaignToSend] = useState<Campaign | null>(null);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
 
+    // Warmup limit state
+    const [warmupLimitReached, setWarmupLimitReached] = useState(false);
+
     const loadCampaigns = useCallback((page: number, silent = false) => {
         if (!silent) setLoading(true)
         fetch(`http://localhost:3000/campaigns?page=${page + 1}&limit=${pageSize}`)
@@ -96,6 +99,18 @@ export function Campaigns() {
 
     useEffect(() => {
         loadCampaigns(pageIndex);
+
+        // Fetch warmup status
+        fetch('http://localhost:3000/warmup')
+            .then(res => res.json())
+            .then(data => {
+                if (data.enabled && data.dailyLimit !== null && data.sentToday >= data.dailyLimit) {
+                    setWarmupLimitReached(true);
+                } else {
+                    setWarmupLimitReached(false);
+                }
+            })
+            .catch(() => setWarmupLimitReached(false));
     }, [pageIndex, loadCampaigns]);
 
     // Auto-refresh when there are active campaigns (SCHEDULED, RUNNING, PROCESSING)
@@ -229,6 +244,32 @@ export function Campaigns() {
                     </Button>
                 </div>
             </div>
+
+            {/* Warmup Limit Warning Banner */}
+            {warmupLimitReached && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div className="flex gap-3 items-start sm:items-center">
+                            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                            <div>
+                                <span className="font-semibold text-red-400">{t('warmup.limit_banner_title')}</span>
+                                <p className="text-red-400/80 text-sm">
+                                    {t('warmup.limit_banner_desc')}
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate('/settings#warmup')}
+                            className="border-red-400/50 text-red-400 hover:bg-red-500/10 w-full sm:w-auto"
+                        >
+                            <Settings className="w-4 h-4 mr-2" />
+                            {t('warmup.view_settings')}
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             <div className="glass rounded-2xl overflow-hidden border border-slate-800/50">
                 <Table>

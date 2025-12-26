@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { SchedulePicker } from "@/components/ui/SchedulePicker"
 import { useTranslation } from "react-i18next"
-import { Sparkles, Save, Send, Clock } from "lucide-react"
+import { Sparkles, Save, Send, Clock, AlertTriangle, Settings } from "lucide-react"
 
 export default function NewCampaign() {
     const { t } = useTranslation()
@@ -20,6 +20,21 @@ export default function NewCampaign() {
         body: "",
         scheduledAt: null as Date | null
     })
+
+    // Warmup limit state
+    const [warmupLimitReached, setWarmupLimitReached] = useState(false);
+
+    // Fetch warmup status on mount
+    useEffect(() => {
+        fetch('http://localhost:3000/warmup')
+            .then(res => res.json())
+            .then(data => {
+                if (data.enabled && data.dailyLimit !== null && data.sentToday >= data.dailyLimit) {
+                    setWarmupLimitReached(true);
+                }
+            })
+            .catch(() => { });
+    }, []);
 
     const handleSave = async (sendNow = false, schedule = false) => {
         if (!formData.subject) {
@@ -100,6 +115,32 @@ export default function NewCampaign() {
 
     return (
         <div className="space-y-8">
+            {/* Warmup Limit Warning Banner */}
+            {warmupLimitReached && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div className="flex gap-3 items-start sm:items-center">
+                            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                            <div>
+                                <span className="font-semibold text-red-400">{t('warmup.limit_banner_title')}</span>
+                                <p className="text-red-400/80 text-sm">
+                                    {t('warmup.limit_banner_desc')}
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate('/settings#warmup')}
+                            className="border-red-400/50 text-red-400 hover:bg-red-500/10 w-full sm:w-auto"
+                        >
+                            <Settings className="w-4 h-4 mr-2" />
+                            {t('warmup.view_settings')}
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Header melhorado */}
             <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 to-purple-600/10 blur-3xl" />
