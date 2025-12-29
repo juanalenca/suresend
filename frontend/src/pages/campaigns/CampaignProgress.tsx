@@ -130,14 +130,13 @@ export default function CampaignProgress() {
                             <p className="text-slate-400 mt-1">{t('campaigns.progress.subtitle')}</p>
                         </div>
                     </div>
-                    {stats.status === 'COMPLETED' && (
-                        <Button
-                            onClick={() => navigate('/campaigns')}
-                            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-                        >
-                            {t('buttons.back_to_campaigns')}
-                        </Button>
-                    )}
+                    <Button
+                        onClick={() => navigate('/campaigns')}
+                        variant="outline"
+                        className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                    >
+                        {t('buttons.back_to_campaigns')}
+                    </Button>
                 </div>
             </div>
 

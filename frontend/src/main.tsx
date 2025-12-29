@@ -16,32 +16,35 @@ import './lib/i18n'
 import './index.css'
 
 import { AuthProvider } from './context/AuthContext'
+import { BrandProvider } from './context/BrandContext'
 import { Toaster } from "@/components/ui/toaster"
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
+      <BrandProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
 
-          {/* Protected Routes Wrapper */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<Layout />}>
-              <Route path="/" element={<App />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/contacts" element={<Contacts />} />
-              <Route path="/campaigns" element={<Campaigns />} />
-              <Route path="/campaigns/new" element={<NewCampaign />} />
-              <Route path="/campaigns/:id/live" element={<CampaignProgress />} />
-              <Route path="/settings" element={<Settings />} />
+            {/* Protected Routes Wrapper */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<Layout />}>
+                <Route path="/" element={<App />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/contacts" element={<Contacts />} />
+                <Route path="/campaigns" element={<Campaigns />} />
+                <Route path="/campaigns/new" element={<NewCampaign />} />
+                <Route path="/campaigns/:id/live" element={<CampaignProgress />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
             </Route>
-          </Route>
 
-          <Route path="/unsubscribe" element={<Unsubscribe />} />
-        </Routes>
-        <Toaster />
-      </BrowserRouter>
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
+          </Routes>
+          <Toaster />
+        </BrowserRouter>
+      </BrandProvider>
     </AuthProvider>
   </React.StrictMode>,
 )

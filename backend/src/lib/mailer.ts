@@ -3,55 +3,102 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Function to get SMTP settings with fallback
-export async function getSmtpSettings() {
-    const configs = await prisma.config.findMany({
-        where: {
-            key: { in: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'email_delay'] }
+/**
+ * Get SMTP settings for a specific brand
+ * This is the primary way to get SMTP settings in multi-brand mode.
+ */
+export async function getBrandSmtpSettings(brandId: string) {
+    const brand = await prisma.brand.findUnique({
+        where: { id: brandId },
+        select: {
+            smtpHost: true,
+            smtpPort: true,
+            smtpUser: true,
+            smtpPass: true,
+            fromEmail: true,
+            emailDelay: true
         }
     });
 
-    const settings: Record<string, string> = {};
-    configs.forEach((c: { key: string; value: string }) => {
-        settings[c.key] = c.value;
-    });
-
-    const host = settings['smtp_host'] || process.env.SMTP_HOST;
-    const port = Number(settings['smtp_port']) || Number(process.env.SMTP_PORT) || 587;
-    const user = settings['smtp_user'] || process.env.SMTP_USER;
-    const pass = settings['smtp_pass'] || process.env.SMTP_PASS;
-    const from = settings['smtp_from'] || process.env.SMTP_FROM || 'no-reply@suresend.com';
-    const delay = Number(settings['email_delay']);
+    if (!brand) {
+        throw new Error(`Brand ${brandId} not found`);
+    }
 
     return {
-        host,
-        port,
-        user,
-        pass,
-        from,
-        delay: (delay && delay > 0) ? delay : 1000 // Fallback to 1000ms
+        host: brand.smtpHost || process.env.SMTP_HOST || 'localhost',
+        port: parseInt(brand.smtpPort || process.env.SMTP_PORT || '587', 10),
+        user: brand.smtpUser || process.env.SMTP_USER || '',
+        pass: brand.smtpPass || process.env.SMTP_PASS || '',
+        from: brand.fromEmail || process.env.SMTP_FROM || 'noreply@example.com',
+        delay: brand.emailDelay || 1000
     };
 }
 
-// Function to get the transporter dynamically
+/**
+ * Get transporter for a specific brand
+ */
+export async function getTransporterForBrand(brandId: string) {
+    const settings = await getBrandSmtpSettings(brandId);
+
+    if (!settings.host || !settings.user || !settings.pass) {
+        throw new Error(`SMTP settings incomplete for brand ${brandId}`);
+    }
+
+    console.log(`📧 Using SMTP Settings for brand: ${settings.host}:${settings.port}`);
+
+    return nodemailer.createTransport({
+        pool: true,
+        maxConnections: 1,
+        maxMessages: 100,
+        host: settings.host,
+        port: settings.port,
+        secure: settings.port === 465,
+        auth: {
+            user: settings.user,
+            pass: settings.pass,
+        },
+        tls: {
+            rejectUnauthorized: false
+        }
+    });
+}
+
+/**
+ * Legacy function - kept for compatibility
+ * Falls back to environment variables only
+ * @deprecated Use getBrandSmtpSettings instead
+ */
+export async function getSmtpSettings() {
+    return {
+        host: process.env.SMTP_HOST || 'localhost',
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        user: process.env.SMTP_USER || '',
+        pass: process.env.SMTP_PASS || '',
+        from: process.env.SMTP_FROM || 'noreply@example.com',
+        delay: 1000
+    };
+}
+
+/**
+ * Legacy function - kept for compatibility
+ * @deprecated Use getTransporterForBrand instead
+ */
 export async function getTransporter() {
     const settings = await getSmtpSettings();
 
     if (settings.host && settings.user && settings.pass) {
-        console.log(`📧 Using SMTP Settings: ${settings.host}:${settings.port}`);
         return nodemailer.createTransport({
-            pool: true, // Use pooled connection
-            maxConnections: 1, // Force single connection
-            maxMessages: 100, // Reuse connection for up to 100 messages
+            pool: true,
+            maxConnections: 1,
+            maxMessages: 100,
             host: settings.host,
             port: settings.port,
-            secure: settings.port === 465, // true for 465, false for other ports
+            secure: settings.port === 465,
             auth: {
                 user: settings.user,
                 pass: settings.pass,
             },
             tls: {
-                // Não rejeitar certificados inválidos (necessário para alguns provedores)
                 rejectUnauthorized: false
             }
         });
@@ -59,7 +106,3 @@ export async function getTransporter() {
 
     throw new Error('SMTP settings are incomplete (missing host, user or pass)');
 }
-
-// Deprecated: existing static transporter (kept for backward compat until refactor complete, 
-// but we will overwrite the file so it's gone. 
-// Worker needs to be updated immediately after this file change.)

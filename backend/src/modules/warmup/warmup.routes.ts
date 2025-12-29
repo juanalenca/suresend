@@ -13,12 +13,16 @@ function calculatePhase(days: number): { phase: number; limit: number | null } {
 }
 
 export async function warmupRoutes(app: FastifyInstance) {
-    // Helper para obter ou criar config
-    const getOrCreateConfig = async () => {
-        let config = await prisma.warmupConfig.findFirst();
+    // Helper para obter ou criar config para a brand atual
+    const getOrCreateConfig = async (brandId: string) => {
+        let config = await prisma.warmupConfig.findUnique({
+            where: { brandId }
+        });
+
         if (!config) {
             config = await prisma.warmupConfig.create({
                 data: {
+                    brandId,
                     enabled: false,
                     currentPhase: 1,
                     dailyLimit: 50,
@@ -30,12 +34,17 @@ export async function warmupRoutes(app: FastifyInstance) {
         return config;
     };
 
-    // GET /warmup - Buscar configuração atual
+    // GET /warmup - Buscar configuração atual (por brandId)
     app.get('/', async (request, reply) => {
         try {
-            const config = await getOrCreateConfig();
+            const brandId = request.brandId;
 
-            // Calcular dias desde início (se existir)
+            if (!brandId) {
+                return reply.status(400).send({ message: 'Brand not selected' });
+            }
+
+            const config = await getOrCreateConfig(brandId);
+
             let daysSinceStart = 0;
             if (config.startDate) {
                 daysSinceStart = Math.floor(
@@ -53,10 +62,16 @@ export async function warmupRoutes(app: FastifyInstance) {
         }
     });
 
-    // POST /warmup/start - Iniciar warmup
+    // POST /warmup/start - Iniciar warmup (por brandId)
     app.post('/start', async (request, reply) => {
         try {
-            const config = await getOrCreateConfig();
+            const brandId = request.brandId;
+
+            if (!brandId) {
+                return reply.status(400).send({ message: 'Brand not selected' });
+            }
+
+            const config = await getOrCreateConfig(brandId);
 
             const updated = await prisma.warmupConfig.update({
                 where: { id: config.id },
@@ -70,7 +85,7 @@ export async function warmupRoutes(app: FastifyInstance) {
                 }
             });
 
-            console.log('[Warmup] 🔥 Warmup iniciado!');
+            console.log(`[Warmup] 🔥 Warmup iniciado para brand ${brandId}!`);
             return updated;
         } catch (error) {
             app.log.error(error);
@@ -81,14 +96,20 @@ export async function warmupRoutes(app: FastifyInstance) {
     // POST /warmup/stop - Pausar warmup
     app.post('/stop', async (request, reply) => {
         try {
-            const config = await getOrCreateConfig();
+            const brandId = request.brandId;
+
+            if (!brandId) {
+                return reply.status(400).send({ message: 'Brand not selected' });
+            }
+
+            const config = await getOrCreateConfig(brandId);
 
             const updated = await prisma.warmupConfig.update({
                 where: { id: config.id },
                 data: { enabled: false }
             });
 
-            console.log('[Warmup] ⏸️ Warmup pausado.');
+            console.log(`[Warmup] ⏸️ Warmup pausado para brand ${brandId}.`);
             return updated;
         } catch (error) {
             app.log.error(error);
@@ -99,7 +120,13 @@ export async function warmupRoutes(app: FastifyInstance) {
     // POST /warmup/reset - Reiniciar do zero
     app.post('/reset', async (request, reply) => {
         try {
-            const config = await getOrCreateConfig();
+            const brandId = request.brandId;
+
+            if (!brandId) {
+                return reply.status(400).send({ message: 'Brand not selected' });
+            }
+
+            const config = await getOrCreateConfig(brandId);
 
             const updated = await prisma.warmupConfig.update({
                 where: { id: config.id },
@@ -113,7 +140,7 @@ export async function warmupRoutes(app: FastifyInstance) {
                 }
             });
 
-            console.log('[Warmup] 🔄 Warmup resetado.');
+            console.log(`[Warmup] 🔄 Warmup resetado para brand ${brandId}.`);
             return updated;
         } catch (error) {
             app.log.error(error);
@@ -129,7 +156,13 @@ export async function warmupRoutes(app: FastifyInstance) {
         };
 
         try {
-            const config = await getOrCreateConfig();
+            const brandId = request.brandId;
+
+            if (!brandId) {
+                return reply.status(400).send({ message: 'Brand not selected' });
+            }
+
+            const config = await getOrCreateConfig(brandId);
 
             const updated = await prisma.warmupConfig.update({
                 where: { id: config.id },

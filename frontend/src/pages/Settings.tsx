@@ -7,19 +7,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { AlertTriangle, Flame } from "lucide-react";
+import { AlertTriangle, Flame, Building2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useBrand, getApiHeaders } from "@/context/BrandContext";
 
 export function Settings() {
     const { t, i18n } = useTranslation();
+    const { currentBrand, refreshBrands } = useBrand();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [timeFormat, setTimeFormat] = useState<string | null>(() => localStorage.getItem('timeFormat'));
+
+    // Brand SMTP form data
     const [formData, setFormData] = useState({
-        host: '',
-        port: '',
-        user: '',
-        pass: '',
+        smtpHost: '',
+        smtpPort: '',
+        smtpUser: '',
+        smtpPass: '',
         fromEmail: '',
         emailDelay: '1000'
     });
@@ -36,18 +40,26 @@ export function Settings() {
         daysSinceStart: 0
     });
 
+    // Load brand settings when brand changes
     useEffect(() => {
-        // Fetch current settings
-        fetch('http://localhost:3000/settings')
+        if (!currentBrand) {
+            setLoading(false);
+            return;
+        }
+
+        // Fetch brand details for SMTP config
+        fetch(`http://localhost:3000/brands/${currentBrand.id}`, {
+            headers: getApiHeaders()
+        })
             .then(res => res.json())
             .then(data => {
                 setFormData({
-                    host: data.host,
-                    port: data.port,
-                    user: data.user,
-                    pass: '', // Don't show password
-                    fromEmail: data.fromEmail,
-                    emailDelay: data.emailDelay || '1000'
+                    smtpHost: data.smtpHost || '',
+                    smtpPort: data.smtpPort || '',
+                    smtpUser: data.smtpUser || '',
+                    smtpPass: '', // Don't show password
+                    fromEmail: data.fromEmail || '',
+                    emailDelay: String(data.emailDelay || 1000)
                 });
                 setLoading(false);
             })
@@ -62,22 +74,48 @@ export function Settings() {
             });
 
         // Fetch warmup config
-        fetch('http://localhost:3000/warmup')
+        fetch('http://localhost:3000/warmup', {
+            headers: getApiHeaders()
+        })
             .then(res => res.json())
             .then(data => {
                 setWarmup({
-                    enabled: data.enabled,
+                    enabled: data.enabled || false,
                     startDate: data.startDate,
                     timezone: data.timezone || 'America/Sao_Paulo',
-                    currentPhase: data.currentPhase,
+                    currentPhase: data.currentPhase || 1,
                     dailyLimit: data.dailyLimit,
-                    sentToday: data.sentToday,
-                    autoResume: data.autoResume,
+                    sentToday: data.sentToday || 0,
+                    autoResume: data.autoResume || false,
                     daysSinceStart: data.daysSinceStart || 0
                 });
             })
             .catch(err => console.error('Error fetching warmup:', err));
-    }, [t]);
+    }, [currentBrand, t]);
+
+    // Auto-refresh warmup counter every 10 seconds when enabled
+    useEffect(() => {
+        if (!warmup.enabled) return;
+
+        const interval = setInterval(() => {
+            fetch('http://localhost:3000/warmup', {
+                headers: getApiHeaders()
+            })
+                .then(res => res.json())
+                .then(data => {
+                    setWarmup(prev => ({
+                        ...prev,
+                        sentToday: data.sentToday,
+                        currentPhase: data.currentPhase,
+                        dailyLimit: data.dailyLimit,
+                        daysSinceStart: data.daysSinceStart || 0
+                    }));
+                })
+                .catch(err => console.error('Error polling warmup:', err));
+        }, 10000);
+
+        return () => clearInterval(interval);
+    }, [warmup.enabled]);
 
     // Ref for warmup card
     const warmupCardRef = useRef<HTMLDivElement>(null);
@@ -101,16 +139,35 @@ export function Settings() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!currentBrand) {
+            toast({
+                title: t('brands.error'),
+                description: t('brands.no_brand_selected'),
+                variant: "destructive"
+            });
+            return;
+        }
+
         setSaving(true);
 
         try {
-            const res = await fetch('http://localhost:3000/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+            const res = await fetch(`http://localhost:3000/brands/${currentBrand.id}`, {
+                method: 'PUT',
+                headers: getApiHeaders(),
+                body: JSON.stringify({
+                    smtpHost: formData.smtpHost || null,
+                    smtpPort: formData.smtpPort || null,
+                    smtpUser: formData.smtpUser || null,
+                    smtpPass: formData.smtpPass || null,
+                    fromEmail: formData.fromEmail || null,
+                    emailDelay: parseInt(formData.emailDelay || '1000', 10)
+                })
             });
 
             if (!res.ok) throw new Error('Failed to save');
+
+            await refreshBrands();
 
             toast({
                 title: t('settings.success_title'),
@@ -131,7 +188,10 @@ export function Settings() {
     // Warmup handlers
     const handleWarmupStart = async () => {
         try {
-            const res = await fetch('http://localhost:3000/warmup/start', { method: 'POST' });
+            const res = await fetch('http://localhost:3000/warmup/start', {
+                method: 'POST',
+                headers: getApiHeaders()
+            });
             const data = await res.json();
             setWarmup(prev => ({ ...prev, ...data, daysSinceStart: 0 }));
             toast({ title: '🔥 Warmup iniciado!', description: 'Seu domínio começou a aquecer.' });
@@ -142,7 +202,10 @@ export function Settings() {
 
     const handleWarmupStop = async () => {
         try {
-            const res = await fetch('http://localhost:3000/warmup/stop', { method: 'POST' });
+            const res = await fetch('http://localhost:3000/warmup/stop', {
+                method: 'POST',
+                headers: getApiHeaders()
+            });
             const data = await res.json();
             setWarmup(prev => ({ ...prev, ...data }));
             toast({ title: '⏸️ Warmup pausado', description: 'O warmup foi pausado.' });
@@ -153,7 +216,10 @@ export function Settings() {
 
     const handleWarmupReset = async () => {
         try {
-            const res = await fetch('http://localhost:3000/warmup/reset', { method: 'POST' });
+            const res = await fetch('http://localhost:3000/warmup/reset', {
+                method: 'POST',
+                headers: getApiHeaders()
+            });
             const data = await res.json();
             setWarmup(prev => ({ ...prev, ...data, daysSinceStart: 0 }));
             toast({ title: '🔄 Warmup resetado', description: 'O warmup foi reiniciado do zero.' });
@@ -166,7 +232,7 @@ export function Settings() {
         try {
             const res = await fetch('http://localhost:3000/warmup', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getApiHeaders(),
                 body: JSON.stringify({ [field]: value })
             });
             const data = await res.json();
@@ -189,6 +255,37 @@ export function Settings() {
         <div>
             <div className="max-w-2xl mx-auto space-y-8">
                 <h1 className="text-3xl font-bold text-white">{t('settings.title')}</h1>
+
+                {/* Current Brand Indicator */}
+                {currentBrand && (
+                    <Card className="bg-violet-500/10 border-violet-500/30 text-slate-200">
+                        <CardContent className="py-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                    {(() => {
+                                        // Get translated name for default brand
+                                        const displayName = currentBrand.isDefault && (
+                                            currentBrand.name === 'Default Brand' ||
+                                            currentBrand.name === 'Marca Padrão' ||
+                                            currentBrand.name === 'Minha Marca'
+                                        ) ? t('brands.default_brand_name') : currentBrand.name;
+                                        return displayName.charAt(0).toUpperCase();
+                                    })()}
+                                </div>
+                                <div>
+                                    <p className="text-sm text-violet-300">{t('brands.editing_brand')}</p>
+                                    <p className="font-semibold text-white">
+                                        {currentBrand.isDefault && (
+                                            currentBrand.name === 'Default Brand' ||
+                                            currentBrand.name === 'Marca Padrão' ||
+                                            currentBrand.name === 'Minha Marca'
+                                        ) ? t('brands.default_brand_name') : currentBrand.name}
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Preferences Card */}
                 <Card className="bg-slate-900/50 border-slate-800 text-slate-200">
@@ -270,21 +367,26 @@ export function Settings() {
                     </CardContent>
                 </Card>
 
-                {/* SMTP Settings Card */}
+                {/* SMTP Settings Card - Now per Brand */}
                 <Card className="bg-slate-900/50 border-slate-800 text-slate-200">
                     <CardHeader>
-                        <CardTitle>{t('settings.smtp_title')}</CardTitle>
-                        <CardDescription>{t('settings.smtp_desc')}</CardDescription>
+                        <div className="flex items-center gap-3">
+                            <Building2 className="w-5 h-5 text-violet-400" />
+                            <div>
+                                <CardTitle>{t('settings.smtp_title')}</CardTitle>
+                                <CardDescription>{t('brands.smtp_per_brand_desc')}</CardDescription>
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="host">{t('settings.host')}</Label>
+                                <Label htmlFor="smtpHost">{t('settings.host')}</Label>
                                 <Input
-                                    id="host"
-                                    name="host"
-                                    placeholder="smtp.example.com"
-                                    value={formData.host}
+                                    id="smtpHost"
+                                    name="smtpHost"
+                                    placeholder={t('brands.smtp_host_placeholder')}
+                                    value={formData.smtpHost}
                                     onChange={handleChange}
                                     className="bg-slate-950 border-slate-800 text-slate-200"
                                 />
@@ -292,23 +394,23 @@ export function Settings() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="port">{t('settings.port')}</Label>
+                                    <Label htmlFor="smtpPort">{t('settings.port')}</Label>
                                     <Input
-                                        id="port"
-                                        name="port"
-                                        placeholder="587"
-                                        value={formData.port}
+                                        id="smtpPort"
+                                        name="smtpPort"
+                                        placeholder={t('brands.smtp_port_placeholder')}
+                                        value={formData.smtpPort}
                                         onChange={handleChange}
                                         className="bg-slate-950 border-slate-800 text-slate-200"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="user">{t('settings.user')}</Label>
+                                    <Label htmlFor="smtpUser">{t('settings.user')}</Label>
                                     <Input
-                                        id="user"
-                                        name="user"
-                                        placeholder="user@example.com"
-                                        value={formData.user}
+                                        id="smtpUser"
+                                        name="smtpUser"
+                                        placeholder={t('brands.smtp_user_placeholder')}
+                                        value={formData.smtpUser}
                                         onChange={handleChange}
                                         className="bg-slate-950 border-slate-800 text-slate-200"
                                     />
@@ -316,13 +418,13 @@ export function Settings() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="pass">{t('settings.pass')}</Label>
+                                <Label htmlFor="smtpPass">{t('settings.pass')}</Label>
                                 <Input
-                                    id="pass"
-                                    name="pass"
+                                    id="smtpPass"
+                                    name="smtpPass"
                                     type="password"
-                                    placeholder="••••••••"
-                                    value={formData.pass}
+                                    placeholder={t('brands.smtp_pass_placeholder')}
+                                    value={formData.smtpPass}
                                     onChange={handleChange}
                                     className="bg-slate-950 border-slate-800 text-slate-200"
                                 />
@@ -334,7 +436,7 @@ export function Settings() {
                                 <Input
                                     id="fromEmail"
                                     name="fromEmail"
-                                    placeholder="Company <sender@example.com>"
+                                    placeholder={t('brands.from_email_placeholder')}
                                     value={formData.fromEmail}
                                     onChange={handleChange}
                                     className="bg-slate-950 border-slate-800 text-slate-200"
@@ -343,7 +445,7 @@ export function Settings() {
                             </div>
 
                             <div className="space-y-2 pt-4 border-t border-slate-800">
-                                <Label htmlFor="emailDelay">Delay entre envios (ms)</Label>
+                                <Label htmlFor="emailDelay">{t('brands.delay_label')}</Label>
                                 {(() => {
                                     const delay = parseInt(formData.emailDelay) || 0;
                                     const isTooLow = delay < 100;
@@ -361,7 +463,6 @@ export function Settings() {
                                                 placeholder="1000"
                                                 value={formData.emailDelay}
                                                 onChange={(e) => {
-                                                    // Prevent negative numbers via code as requested
                                                     const val = Math.max(0, parseInt(e.target.value) || 0);
                                                     setFormData(prev => ({ ...prev, emailDelay: String(val) }));
                                                 }}
@@ -441,143 +542,33 @@ export function Settings() {
                                             </span>
                                         )}
                                     </div>
-                                    {warmup.dailyLimit !== null && (() => {
-                                        const percentage = Math.min((warmup.sentToday / warmup.dailyLimit) * 100, 100);
-                                        const isLimitReached = warmup.sentToday >= warmup.dailyLimit;
-
-                                        // Dynamic colors by phase
-                                        const phaseColors: Record<number, { gradient: string; shadow: string; glow: string }> = {
-                                            1: {
-                                                gradient: 'linear-gradient(90deg, #f97316 0%, #fb923c 50%, #fdba74 100%)',
-                                                shadow: '0 0 20px rgba(249, 115, 22, 0.5)',
-                                                glow: 'from-orange-600/20 via-orange-500/10 to-amber-500/20'
-                                            },
-                                            2: {
-                                                gradient: 'linear-gradient(90deg, #eab308 0%, #facc15 50%, #fde047 100%)',
-                                                shadow: '0 0 20px rgba(234, 179, 8, 0.5)',
-                                                glow: 'from-yellow-600/20 via-yellow-500/10 to-amber-400/20'
-                                            },
-                                            3: {
-                                                gradient: 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #6ee7b7 100%)',
-                                                shadow: '0 0 20px rgba(16, 185, 129, 0.5)',
-                                                glow: 'from-emerald-600/20 via-emerald-500/10 to-teal-500/20'
-                                            },
-                                            4: {
-                                                gradient: 'linear-gradient(90deg, #6366f1 0%, #818cf8 50%, #a5b4fc 100%)',
-                                                shadow: '0 0 20px rgba(99, 102, 241, 0.5)',
-                                                glow: 'from-indigo-600/20 via-indigo-500/10 to-purple-500/20'
-                                            }
-                                        };
-
-                                        const limitReachedColors = {
-                                            gradient: 'linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #f87171 100%)',
-                                            shadow: '0 0 25px rgba(220, 38, 38, 0.6)',
-                                            glow: 'from-red-600/30 via-red-500/20 to-orange-500/20'
-                                        };
-
-                                        const defaultColors = {
-                                            gradient: 'linear-gradient(90deg, #f97316 0%, #fb923c 50%, #fdba74 100%)',
-                                            shadow: '0 0 20px rgba(249, 115, 22, 0.5)',
-                                            glow: 'from-orange-600/20 via-orange-500/10 to-amber-500/20'
-                                        };
-
-                                        const colors = isLimitReached
-                                            ? limitReachedColors
-                                            : (phaseColors[warmup.currentPhase] || defaultColors);
-
-                                        return (
+                                    {warmup.dailyLimit !== null && (
+                                        <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
                                             <div
-                                                className="relative h-4 w-full overflow-hidden rounded-full bg-slate-800/40 border border-slate-700/50 shadow-inner"
-                                                role="progressbar"
-                                                aria-valuenow={warmup.sentToday}
-                                                aria-valuemin={0}
-                                                aria-valuemax={warmup.dailyLimit}
-                                                aria-label={t('warmup.progress_label', { sent: warmup.sentToday, limit: warmup.dailyLimit, phase: warmup.currentPhase })}
-                                            >
-                                                {/* Background glow effect */}
-                                                <div className={`absolute inset-0 bg-gradient-to-r ${colors.glow} blur-sm`} />
+                                                className="h-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-500"
+                                                style={{ width: `${Math.min((warmup.sentToday / warmup.dailyLimit) * 100, 100)}%` }}
+                                            />
+                                        </div>
+                                    )}
 
-                                                {/* Progress indicator */}
-                                                <div
-                                                    className={`h-full relative transition-all duration-700 ease-out rounded-full ${isLimitReached ? 'animate-pulse' : ''}`}
-                                                    style={{
-                                                        width: `${percentage}%`,
-                                                        background: colors.gradient,
-                                                        boxShadow: `${colors.shadow}, inset 0 1px 0 rgba(255, 255, 255, 0.25)`
-                                                    }}
-                                                >
-                                                    {/* Shimmer effect */}
-                                                    <div
-                                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent rounded-full"
-                                                        style={{
-                                                            backgroundSize: '200% 100%',
-                                                            animation: 'shimmer 2.5s infinite linear'
-                                                        }}
-                                                    />
-
-                                                    {/* Edge highlight */}
-                                                    {percentage > 5 && (
-                                                        <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-white/40 rounded-r-full" />
-                                                    )}
-                                                </div>
-
-                                                {/* Texture overlay */}
-                                                <div
-                                                    className="absolute inset-0 pointer-events-none opacity-10 rounded-full"
-                                                    style={{
-                                                        backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.1) 16px)'
-                                                    }}
-                                                />
-                                            </div>
-                                        );
-                                    })()}
-
-                                    {/* Banner: Limite Atingido (Vermelho) */}
+                                    {/* Limit reached warning */}
                                     {warmup.dailyLimit !== null && warmup.sentToday >= warmup.dailyLimit && (
                                         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mt-3">
                                             <div className="flex gap-2 items-center text-red-400 text-sm">
                                                 <AlertTriangle className="w-4 h-4" />
                                                 <span className="font-semibold">{t('warmup.limit_reached_title')}</span>
                                             </div>
-                                            <p className="text-red-400/80 text-xs mt-1">
-                                                {warmup.autoResume ? t('warmup.limit_reached_desc_auto') : t('warmup.limit_reached_desc_manual')}
-                                            </p>
                                         </div>
                                     )}
 
-                                    {/* Banner: Fase Ilimitada (Verde) */}
+                                    {/* Unlimited banner */}
                                     {warmup.dailyLimit === null && (
                                         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mt-3">
                                             <div className="flex gap-2 items-center text-emerald-400 text-sm">
                                                 <span>🔥</span>
                                                 <span className="font-semibold">{t('warmup.unlimited_banner_title')}</span>
                                             </div>
-                                            <p className="text-emerald-400/80 text-xs mt-1">{t('warmup.unlimited_banner_desc')}</p>
                                         </div>
-                                    )}
-
-                                    {/* Indicador de Progressão */}
-                                    {warmup.dailyLimit !== null && (
-                                        <p className="text-xs text-slate-500 mt-2">
-                                            📍 {(() => {
-                                                const phase = warmup.currentPhase;
-                                                const days = warmup.daysSinceStart;
-                                                const phaseThresholds = [0, 4, 8, 15, 22];
-                                                const nextPhase = phase + 1;
-                                                const daysToNext = (phaseThresholds[phase] ?? 4) - days;
-                                                return daysToNext > 0
-                                                    ? t('warmup.next_phase', { next: nextPhase, days: daysToNext })
-                                                    : t('warmup.next_phase', { next: nextPhase, days: 1 });
-                                            })()}
-                                            {' • '}
-                                            <span className="font-mono">50 → 200 → 500 → 1500 → ∞</span>
-                                        </p>
-                                    )}
-
-                                    {warmup.dailyLimit !== null && warmup.sentToday < warmup.dailyLimit && (
-                                        <p className="text-xs text-slate-500 mt-1">
-                                            {t('warmup.resets_at', { time: formatResetTime() })}
-                                        </p>
                                     )}
                                 </div>
 

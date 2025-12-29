@@ -306,94 +306,111 @@ export function Campaigns() {
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            data.map((campaign) => (
-                                <TableRow
-                                    key={campaign.id}
-                                    className="border-slate-800/50 hover:bg-slate-800/30 transition-colors duration-300 group"
-                                >
-                                    <TableCell className="text-slate-200 font-medium">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-2 h-2 rounded-full bg-violet-500 group-hover:scale-150 transition-transform duration-300" />
-                                            {campaign.subject}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusStyles(campaign.status)}`}>
-                                                {t(`campaigns.status.${campaign.status}`) || campaign.status}
+                            data.map((campaign) => {
+                                const canViewLogs = ['PROCESSING', 'RUNNING', 'PAUSED'].includes(campaign.status);
+                                return (
+                                    <TableRow
+                                        key={campaign.id}
+                                        className="border-slate-800/50 hover:bg-slate-800/30 transition-colors duration-300 group"
+                                    >
+                                        <TableCell className="text-slate-200 font-medium">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-violet-500 group-hover:scale-150 transition-transform duration-300" />
+                                                {campaign.subject}
                                             </div>
-                                            {campaign.status === 'SCHEDULED' && campaign.scheduledAt && (
-                                                <div className="text-xs text-amber-400 mt-1 flex items-center gap-1">
-                                                    <Clock className="w-3 h-3" />
-                                                    {formatScheduledDateTime(campaign.scheduledAt)}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusStyles(campaign.status)}`}>
+                                                    {t(`campaigns.status.${campaign.status}`) || campaign.status}
                                                 </div>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Send className="w-4 h-4 text-slate-500" />
-                                            <span className="text-slate-200 font-semibold">{campaign.sentCount}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Eye className="w-4 h-4 text-emerald-500" />
-                                            <span className="text-emerald-400 font-semibold">{campaign.openCount}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-slate-400">
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Calendar className="w-4 h-4 text-slate-600" />
-                                            {new Date(campaign.createdAt).toLocaleDateString()}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            {campaign.status === 'DRAFT' && (
+                                                {campaign.status === 'SCHEDULED' && campaign.scheduledAt && (
+                                                    <div className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        {formatScheduledDateTime(campaign.scheduledAt)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Send className="w-4 h-4 text-slate-500" />
+                                                <span className="text-slate-200 font-semibold">{campaign.sentCount}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Eye className="w-4 h-4 text-emerald-500" />
+                                                <span className="text-emerald-400 font-semibold">{campaign.openCount}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-slate-400">
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <Calendar className="w-4 h-4 text-slate-600" />
+                                                {new Date(campaign.createdAt).toLocaleDateString()}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">
+                                                {campaign.status === 'DRAFT' && (
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-8 w-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10"
+                                                        onClick={() => {
+                                                            setCampaignToSend(campaign);
+                                                            setIsConfirmOpen(true);
+                                                        }}
+                                                        title={t('buttons.send', { defaultValue: "Enviar" })}
+                                                    >
+                                                        <Play className="w-4 h-4" />
+                                                    </Button>
+                                                )}
+                                                {campaign.status === 'SCHEDULED' && (
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-8 w-8 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+                                                        onClick={() => {
+                                                            setSelectedCampaignId(campaign.id);
+                                                            setIsCancelScheduleOpen(true);
+                                                        }}
+                                                        title={t('campaigns.cancel_schedule', { defaultValue: "Cancelar Agendamento" })}
+                                                    >
+                                                        <XCircle className="w-4 h-4" />
+                                                    </Button>
+                                                )}
+                                                {canViewLogs && (
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-8 w-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/campaigns/${campaign.id}/live`);
+                                                        }}
+                                                        title={t('campaigns.view_logs', { defaultValue: "Ver Logs" })}
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </Button>
+                                                )}
                                                 <Button
                                                     size="icon"
                                                     variant="ghost"
-                                                    className="h-8 w-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10"
-                                                    onClick={() => {
-                                                        setCampaignToSend(campaign);
-                                                        setIsConfirmOpen(true);
-                                                    }}
-                                                    title={t('buttons.send', { defaultValue: "Enviar" })}
-                                                >
-                                                    <Play className="w-4 h-4" />
-                                                </Button>
-                                            )}
-                                            {campaign.status === 'SCHEDULED' && (
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className="h-8 w-8 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+                                                    className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
                                                     onClick={() => {
                                                         setSelectedCampaignId(campaign.id);
-                                                        setIsCancelScheduleOpen(true);
+                                                        setIsDeleteConfirmOpen(true);
                                                     }}
-                                                    title={t('campaigns.cancel_schedule', { defaultValue: "Cancelar Agendamento" })}
+                                                    title={t('buttons.delete', { defaultValue: "Excluir" })}
                                                 >
-                                                    <XCircle className="w-4 h-4" />
+                                                    <Trash2 className="w-4 h-4" />
                                                 </Button>
-                                            )}
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                                                onClick={() => {
-                                                    setSelectedCampaignId(campaign.id);
-                                                    setIsDeleteConfirmOpen(true);
-                                                }}
-                                                title={t('buttons.delete', { defaultValue: "Excluir" })}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })
                         )}
                     </TableBody>
                 </Table>

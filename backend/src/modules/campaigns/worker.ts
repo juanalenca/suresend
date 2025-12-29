@@ -1,5 +1,5 @@
 import { PrismaClient, WarmupConfig } from '@prisma/client';
-import { getTransporter, getSmtpSettings } from '../../lib/mailer';
+import { getTransporter } from '../../lib/mailer';
 import { startOfDay } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
@@ -24,7 +24,6 @@ async function checkAndResetWarmup(warmupConfig: WarmupConfig): Promise<WarmupCo
     const todayStart = startOfDay(zonedNow).getTime();
     const lastResetStart = startOfDay(zonedLastReset).getTime();
 
-    // Se o dia mudou, resetar contador e atualizar fase
     if (todayStart > lastResetStart) {
         const daysSinceStart = warmupConfig.startDate
             ? Math.floor((now.getTime() - warmupConfig.startDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -50,13 +49,58 @@ async function checkAndResetWarmup(warmupConfig: WarmupConfig): Promise<WarmupCo
     return warmupConfig;
 }
 
+// Buscar configurações SMTP da Brand
+async function getBrandSmtpSettings(brandId: string) {
+    const brand = await prisma.brand.findUnique({
+        where: { id: brandId },
+        select: {
+            smtpHost: true,
+            smtpPort: true,
+            smtpUser: true,
+            smtpPass: true,
+            fromEmail: true,
+            emailDelay: true
+        }
+    });
+
+    if (!brand) {
+        throw new Error(`Brand ${brandId} not found`);
+    }
+
+    return {
+        host: brand.smtpHost || process.env.SMTP_HOST || 'localhost',
+        port: parseInt(brand.smtpPort || process.env.SMTP_PORT || '587', 10),
+        user: brand.smtpUser || process.env.SMTP_USER || '',
+        pass: brand.smtpPass || process.env.SMTP_PASS || '',
+        from: brand.fromEmail || process.env.SMTP_FROM || 'noreply@example.com',
+        delay: brand.emailDelay || 1000
+    };
+}
+
+// Criar transporter com configurações da Brand
+async function getTransporterForBrand(brandId: string) {
+    const settings = await getBrandSmtpSettings(brandId);
+    const nodemailer = require('nodemailer');
+
+    return nodemailer.createTransport({
+        host: settings.host,
+        port: settings.port,
+        secure: settings.port === 465,
+        auth: {
+            user: settings.user,
+            pass: settings.pass
+        }
+    });
+}
+
 export async function processCampaignSending(campaignId: string) {
     try {
         console.log(`[Worker] Starting campaign ${campaignId}`);
 
-        // 1. Fetch Campaign details FIRST to check status
+        // 1. Fetch Campaign details
         const campaign = await prisma.campaign.findUnique({
-            where: { id: campaignId }
+            where: { id: campaignId },
+            include: { brand: true }
         });
 
         if (!campaign) {
@@ -64,11 +108,9 @@ export async function processCampaignSending(campaignId: string) {
             return;
         }
 
-        // Note: PROCESSING check removed because BullMQ already handles concurrency
-        // and sets status to PROCESSING before calling this function
-        // Valid states to process: DRAFT, SCHEDULED, or already PROCESSING (from BullMQ)
+        const brandId = campaign.brandId;
 
-        // 2. Update status to PROCESSING (if not already set by BullMQ worker)
+        // 2. Update status to PROCESSING
         if (campaign.status !== 'PROCESSING') {
             await prisma.campaign.update({
                 where: { id: campaignId },
@@ -76,33 +118,39 @@ export async function processCampaignSending(campaignId: string) {
             });
         }
 
-        // 3. Fetch All Subscribed Contacts
+        // 3. Fetch contacts for this brand only
         const contacts = await prisma.contact.findMany({
-            where: { status: 'SUBSCRIBED' }
+            where: {
+                status: 'SUBSCRIBED',
+                brandId: brandId
+            }
         });
 
-        console.log(`[Worker] Found ${contacts.length} contacts to send.`);
+        console.log(`[Worker] Found ${contacts.length} contacts for brand ${brandId}.`);
 
-        // Fetch SMTP Settings once
-        const settings = await getSmtpSettings();
-        const transporter = await getTransporter();
+        // 4. Get SMTP settings from Brand
+        const settings = await getBrandSmtpSettings(brandId);
+        const transporter = await getTransporterForBrand(brandId);
 
+        console.log(`[Worker] Using Brand SMTP: ${settings.host}:${settings.port}`);
         console.log(`[Worker] Using Rate Limit Delay: ${settings.delay}ms`);
 
         let sentCount = 0;
         let failedCount = 0;
 
-        // --- WARMUP: Buscar config ANTES do loop ---
-        let warmupConfig = await prisma.warmupConfig.findFirst();
+        // --- WARMUP: Buscar config para esta brand ---
+        let warmupConfig = await prisma.warmupConfig.findUnique({
+            where: { brandId }
+        });
+
         if (warmupConfig?.enabled) {
             warmupConfig = await checkAndResetWarmup(warmupConfig);
-            console.log(`[Warmup] 🔥 Warmup ativo. Fase ${warmupConfig.currentPhase}, limite ${warmupConfig.dailyLimit ?? 'ilimitado'}, enviados hoje: ${warmupConfig.sentToday}`);
+            console.log(`[Warmup] 🔥 Warmup ativo para brand ${brandId}. Fase ${warmupConfig.currentPhase}, limite ${warmupConfig.dailyLimit ?? 'ilimitado'}, enviados hoje: ${warmupConfig.sentToday}`);
         }
 
         for (const contact of contacts) {
-            // --- WARMUP CHECK: Verificar limite antes de cada envio ---
+            // --- WARMUP CHECK ---
             if (warmupConfig?.enabled) {
-                // Fase 5 = ilimitado (dailyLimit é null)
                 if (warmupConfig.dailyLimit !== null && warmupConfig.sentToday >= warmupConfig.dailyLimit) {
                     const resumeMsg = warmupConfig.autoResume
                         ? 'Retomada automática amanhã.'
@@ -112,16 +160,14 @@ export async function processCampaignSending(campaignId: string) {
 
                     await prisma.campaign.update({
                         where: { id: campaignId },
-                        data: { status: 'PAUSED' }
+                        data: { status: 'PAUSED', pausedByWarmup: true }
                     });
 
-                    break; // Sai do loop
+                    break;
                 }
             }
 
-
             try {
-                // 4.1. Create Log PENDING
                 const emailLog = await prisma.emailLog.create({
                     data: {
                         campaignId: campaign.id,
@@ -130,17 +176,14 @@ export async function processCampaignSending(campaignId: string) {
                     }
                 });
 
-                // 4.2. Generate Tracking Pixel
                 const trackingUrl = `${process.env.API_URL || 'http://localhost:3000'}/track/${emailLog.id}/open`;
                 const trackingPixel = `<img src="${trackingUrl}" alt="" width="1" height="1" style="display:none" />`;
 
                 const unsubLink = `${process.env.APP_URL || 'http://localhost:5173'}/unsubscribe/${contact.unsubscribeToken}`;
                 const footer = `<hr><p style="font-size:12px; color: #666; font-family: sans-serif;">Deseja parar de receber estes e-mails? <a href="${unsubLink}" style="color: #666;">Cancelar inscrição</a>.</p>`;
 
-                // 4.3. Inject Pixel & Footer
                 const htmlWithPixel = campaign.body.replace('{{name}}', contact.name || 'Friend') + trackingPixel + footer;
 
-                // 4.4. Send Email (SINGLE ATTEMPT - NO RETRIES)
                 const info = await transporter.sendMail({
                     from: settings.from,
                     to: contact.email,
@@ -148,7 +191,6 @@ export async function processCampaignSending(campaignId: string) {
                     html: htmlWithPixel
                 });
 
-                // 4.5. Update Log to SENT
                 await prisma.emailLog.update({
                     where: { id: emailLog.id },
                     data: {
@@ -160,19 +202,17 @@ export async function processCampaignSending(campaignId: string) {
                 sentCount++;
                 console.log(`[Worker] ✅ SENT - ${contact.email}`);
 
-                // Update counter
                 await prisma.campaign.update({
                     where: { id: campaignId },
                     data: { sentCount: { increment: 1 } }
                 });
 
-                // --- WARMUP: Incrementar contador após envio bem-sucedido ---
+                // --- WARMUP: Incrementar contador após envio ---
                 if (warmupConfig?.enabled) {
                     await prisma.warmupConfig.update({
                         where: { id: warmupConfig.id },
                         data: { sentToday: { increment: 1 } }
                     });
-                    // Atualizar localmente para próxima iteração
                     warmupConfig.sentToday++;
                 }
 
@@ -191,19 +231,15 @@ export async function processCampaignSending(campaignId: string) {
 
                 failedCount++;
 
-                // --- SMART BACKOFF (PENALTY BOX) ---
-                // If rate limit reached, wait extra time before continuing
                 if (errorMessage.toLowerCase().includes('limit') || errorMessage.toLowerCase().includes('too many')) {
                     console.warn(`[Worker] ⚠️ Rate limit detected! Applying 5s PENALTY before next contact...`);
                     await new Promise(r => setTimeout(r, 5000));
                 }
             }
 
-            // --- COMPASS DELAY (ALWAYS EXECUTED - OUTSIDE TRY/CATCH) ---
             await new Promise(r => setTimeout(r, settings.delay));
         }
 
-        // 5. Finish
         await prisma.campaign.update({
             where: { id: campaignId },
             data: { status: 'COMPLETED' }

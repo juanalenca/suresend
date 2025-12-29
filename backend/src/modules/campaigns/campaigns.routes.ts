@@ -6,35 +6,24 @@ import { campaignQueue } from '../../lib/queue';
 const prisma = new PrismaClient();
 
 export async function campaignsRoutes(app: FastifyInstance) {
-    // Helper to get a default user (since we don't have full auth yet)
-    const getDefaultUser = async () => {
-        let user = await prisma.user.findFirst();
-        if (!user) {
-            user = await prisma.user.create({
-                data: {
-                    email: 'admin@suresend.com',
-                    password: 'hashed_password_placeholder', // In real app, this would be hashed
-                    name: 'Admin User'
-                }
-            });
-        }
-        return user;
-    };
 
-    // GET /campaigns - List with pagination
+    // GET /campaigns - List with pagination (filtered by brandId)
     app.get('/', async (request, reply) => {
         try {
             const { page, limit } = request.query as { page?: string; limit?: string };
+            const brandId = request.brandId;
 
-            // Parse pagination params (defaults: page 1, limit 10)
             const pageNum = parseInt(page || '1', 10);
             const limitNum = parseInt(limit || '10', 10);
             const skip = (pageNum - 1) * limitNum;
 
-            // Get total count for pagination metadata
-            const total = await prisma.campaign.count();
+            // Filter by brandId if available
+            const where = brandId ? { brandId } : {};
+
+            const total = await prisma.campaign.count({ where });
 
             const campaigns = await prisma.campaign.findMany({
+                where,
                 orderBy: { createdAt: 'desc' },
                 skip,
                 take: limitNum,
@@ -45,7 +34,6 @@ export async function campaignsRoutes(app: FastifyInstance) {
                 }
             });
 
-            // Return paginated response with metadata
             return {
                 data: campaigns,
                 meta: {
@@ -61,13 +49,13 @@ export async function campaignsRoutes(app: FastifyInstance) {
         }
     });
 
-    // POST /campaigns - Create Draft or Scheduled
+    // POST /campaigns - Create Draft or Scheduled (with brandId)
     app.post('/', async (request, reply) => {
         const { name, subject, body, scheduledAt } = request.body as {
             name: string;
             subject: string;
             body: string;
-            scheduledAt?: string; // ISO 8601 date string (UTC from frontend)
+            scheduledAt?: string;
         };
 
         if (!name || !subject) {
@@ -75,9 +63,22 @@ export async function campaignsRoutes(app: FastifyInstance) {
         }
 
         try {
-            const user = await getDefaultUser();
+            const brandId = request.brandId;
 
-            // Determine status based on scheduledAt
+            if (!brandId) {
+                return reply.status(400).send({ message: 'Brand not selected' });
+            }
+
+            // Get user from brand
+            const brand = await prisma.brand.findUnique({
+                where: { id: brandId },
+                select: { userId: true }
+            });
+
+            if (!brand) {
+                return reply.status(400).send({ message: 'Invalid brand' });
+            }
+
             const isScheduled = !!scheduledAt;
             const scheduledDate = isScheduled ? new Date(scheduledAt) : null;
 
@@ -88,22 +89,22 @@ export async function campaignsRoutes(app: FastifyInstance) {
                     body: body || '',
                     status: isScheduled ? 'SCHEDULED' : 'DRAFT',
                     scheduledAt: scheduledDate,
-                    userId: user.id
+                    userId: brand.userId,
+                    brandId: brandId
                 }
             });
 
-            // If scheduled, add job to queue with delay
             if (isScheduled && scheduledDate) {
                 const delay = scheduledDate.getTime() - Date.now();
                 await campaignQueue.add(
                     'send-campaign',
                     { campaignId: campaign.id },
                     {
-                        delay: Math.max(delay, 0), // Ensure non-negative delay
-                        jobId: `campaign-${campaign.id}` // Named job for easy cancellation
+                        delay: Math.max(delay, 0),
+                        jobId: `campaign-${campaign.id}`
                     }
                 );
-                console.log(`[Scheduler] 📅 Campaign ${campaign.id} scheduled for ${scheduledDate.toISOString()} (delay: ${delay}ms)`);
+                console.log(`[Scheduler] 📅 Campaign ${campaign.id} scheduled for ${scheduledDate.toISOString()}`);
             }
 
             return campaign;
@@ -117,14 +118,21 @@ export async function campaignsRoutes(app: FastifyInstance) {
     app.put('/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
         const { subject, body } = request.body as { subject?: string; body?: string };
+        const brandId = request.brandId;
 
         try {
+            // Verify campaign belongs to brand
+            const existing = await prisma.campaign.findFirst({
+                where: { id, ...(brandId ? { brandId } : {}) }
+            });
+
+            if (!existing) {
+                return reply.status(404).send({ message: 'Campaign not found' });
+            }
+
             const campaign = await prisma.campaign.update({
                 where: { id },
-                data: {
-                    subject,
-                    body
-                }
+                data: { subject, body }
             });
             return campaign;
         } catch (error) {
@@ -136,15 +144,18 @@ export async function campaignsRoutes(app: FastifyInstance) {
     // POST /campaigns/:id/send - Send (Trigger Worker)
     app.post('/:id/send', async (request, reply) => {
         const { id } = request.params as { id: string };
+        const brandId = request.brandId;
 
         try {
-            const campaign = await prisma.campaign.findUnique({ where: { id } });
+            const campaign = await prisma.campaign.findFirst({
+                where: { id, ...(brandId ? { brandId } : {}) }
+            });
+
             if (!campaign) return reply.status(404).send({ message: 'Campaign not found' });
             if (campaign.status === 'COMPLETED' || campaign.status === 'PROCESSING') {
                 return reply.status(400).send({ message: 'Campaign already processing or completed' });
             }
 
-            // Start Worker in background
             processCampaignSending(id).catch(err => {
                 app.log.error(`Background worker failed for campaign ${id}: ${err}`);
             });
@@ -159,9 +170,11 @@ export async function campaignsRoutes(app: FastifyInstance) {
     // GET /campaigns/:id/stats - Progress
     app.get('/:id/stats', async (request, reply) => {
         const { id } = request.params as { id: string };
+        const brandId = request.brandId;
+
         try {
-            const campaign = await prisma.campaign.findUnique({
-                where: { id },
+            const campaign = await prisma.campaign.findFirst({
+                where: { id, ...(brandId ? { brandId } : {}) },
                 include: {
                     emailLogs: {
                         take: 10,
@@ -173,7 +186,13 @@ export async function campaignsRoutes(app: FastifyInstance) {
 
             if (!campaign) return reply.status(404).send({ message: 'Campaign not found' });
 
-            const totalContacts = await prisma.contact.count({ where: { status: 'SUBSCRIBED' } });
+            // Count contacts for this brand
+            const totalContacts = await prisma.contact.count({
+                where: {
+                    status: 'SUBSCRIBED',
+                    ...(brandId ? { brandId } : {})
+                }
+            });
             const failedCount = await prisma.emailLog.count({ where: { campaignId: id, status: 'FAILED' } });
 
             return {
@@ -198,22 +217,24 @@ export async function campaignsRoutes(app: FastifyInstance) {
     // DELETE /campaigns/:id/schedule - Cancel scheduled campaign
     app.delete('/:id/schedule', async (request, reply) => {
         const { id } = request.params as { id: string };
+        const brandId = request.brandId;
 
         try {
-            const campaign = await prisma.campaign.findUnique({ where: { id } });
+            const campaign = await prisma.campaign.findFirst({
+                where: { id, ...(brandId ? { brandId } : {}) }
+            });
+
             if (!campaign) return reply.status(404).send({ message: 'Campaign not found' });
             if (campaign.status !== 'SCHEDULED') {
                 return reply.status(400).send({ message: 'Campaign is not scheduled' });
             }
 
-            // Remove job from queue
             const job = await campaignQueue.getJob(`campaign-${id}`);
             if (job) {
                 await job.remove();
                 console.log(`[Scheduler] ❌ Cancelled scheduled job for campaign ${id}`);
             }
 
-            // Update campaign status back to DRAFT
             await prisma.campaign.update({
                 where: { id },
                 data: {
@@ -232,16 +253,23 @@ export async function campaignsRoutes(app: FastifyInstance) {
     // DELETE /campaigns/:id - Delete
     app.delete('/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
+        const brandId = request.brandId;
 
         try {
-            // Also remove from queue if scheduled
+            const campaign = await prisma.campaign.findFirst({
+                where: { id, ...(brandId ? { brandId } : {}) }
+            });
+
+            if (!campaign) {
+                return reply.status(404).send({ message: 'Campaign not found' });
+            }
+
             const job = await campaignQueue.getJob(`campaign-${id}`);
             if (job) await job.remove();
 
-            // First delete related logs to avoid FK constraints
             await prisma.emailLog.deleteMany({ where: { campaignId: id } });
-
             await prisma.campaign.delete({ where: { id } });
+
             return { message: 'Campaign deleted successfully' };
         } catch (error) {
             app.log.error(error);

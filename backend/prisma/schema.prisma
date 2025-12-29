@@ -18,28 +18,64 @@ model User {
   createdAt DateTime @default(now())
   
   campaigns Campaign[]
+  brands    Brand[]
+}
+
+// Marca/Domínio (Multi-brand support)
+model Brand {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  name        String   // Ex: "Minha Startup", "Cliente X"
+  domain      String?  // Ex: "startup.com"
+  
+  // SMTP Configuration (moved from global Config)
+  smtpHost    String?
+  smtpPort    String?
+  smtpUser    String?
+  smtpPass    String?  // Should be stored encrypted in production
+  fromEmail   String?
+  emailDelay  Int      @default(1000)
+  
+  // Relations
+  campaigns     Campaign[]
+  contacts      Contact[]
+  warmupConfig  WarmupConfig?
+  
+  isDefault   Boolean  @default(false)  // First brand = default
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
 }
 
 // Os Contatos (Quem recebe os emails)
 model Contact {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  name         String?
-  status       String   @default("SUBSCRIBED") // SUBSCRIBED, UNSUBSCRIBED, BOUNCED
-  tags         String[] // Ex: ["newsletter", "cliente-antigo"]
-  unsubscribeToken String @unique @default(uuid())
-  createdAt    DateTime @default(now())
+  id               String   @id @default(uuid())
+  email            String   // Unique per brand, not globally
+  name             String?
+  status           String   @default("SUBSCRIBED") // SUBSCRIBED, UNSUBSCRIBED, BOUNCED
+  tags             String[] // Ex: ["newsletter", "cliente-antigo"]
+  unsubscribeToken String   @unique @default(uuid())
+  createdAt        DateTime @default(now())
 
-  emailLogs    EmailLog[]
+  brandId   String
+  brand     Brand    @relation(fields: [brandId], references: [id])
+
+  emailLogs EmailLog[]
+
+  @@unique([email, brandId])  // Email único por marca
+  @@index([brandId])
 }
 
 // As Campanhas (Os disparos em massa)
 model Campaign {
-  id          String    @id @default(uuid())
-  name        String?   // <--- ADICIONE ISSO (Nome interno para sua organização)
-  subject     String
-  body        String    @db.Text
-  status      String    @default("DRAFT")
+  id             String    @id @default(uuid())
+  name           String?   // Nome interno para sua organização
+  subject        String
+  body           String    @db.Text
+  status         String    @default("DRAFT")
+  pausedByWarmup Boolean   @default(false)  // True se pausado por limite de warmup
   
   sentCount   Int       @default(0)
   openCount   Int       @default(0)
@@ -51,7 +87,12 @@ model Campaign {
   userId      String
   user        User      @relation(fields: [userId], references: [id])
   
+  brandId     String
+  brand       Brand     @relation(fields: [brandId], references: [id])
+  
   emailLogs   EmailLog[]
+
+  @@index([brandId])
 }
 
 // Log individual de cada envio (Para saber quem recebeu o que)
@@ -71,18 +112,11 @@ model EmailLog {
   updatedAt   DateTime @updatedAt
 }
 
-model Config {
-  id        String   @id @default(uuid())
-  key       String   @unique // Ex: "smtp_host", "smtp_user"
-  value     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// Configuração de Warmup de Domínio/IP
+// Configuração de Warmup de Domínio/IP (per brand)
 model WarmupConfig {
   id              String    @id @default(uuid())
-  userId          String?   // Preparado para multi-tenant
+  brandId         String    @unique  // One warmup config per brand
+  brand           Brand     @relation(fields: [brandId], references: [id])
   enabled         Boolean   @default(false)
   startDate       DateTime?
   timezone        String    @default("America/Sao_Paulo")
@@ -90,7 +124,8 @@ model WarmupConfig {
   dailyLimit      Int?      @default(50)  // null = ilimitado (fase 5)
   sentToday       Int       @default(0)
   lastResetDate   DateTime  @default(now())
-  autoResume      Boolean   @default(false)  // Retomada manual por padrão
+  autoResume      Boolean   @default(false)  // Retomada automática
+  lastAutoResumeCheck DateTime?  // Evita race condition no cron
   bounceThreshold Float?    // Futuro: pausar se bounce > X%
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
