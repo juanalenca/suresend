@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next"
 import { Users, Sparkles, UserPlus, Upload, AlertTriangle } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
+import { useBrand } from "@/context/BrandContext"
+import { apiUrl } from "@/lib/api"
 import {
     Dialog,
     DialogContent,
@@ -19,6 +21,7 @@ import {
 export function Contacts() {
     const { t } = useTranslation()
     const { toast } = useToast()
+    const { brandVersion } = useBrand()
     const [data, setData] = useState<Contact[]>([])
     const [loading, setLoading] = useState(true)
     const [pageIndex, setPageIndex] = useState(0)
@@ -33,7 +36,7 @@ export function Contacts() {
     const fetchContacts = useCallback(async (page: number) => {
         setLoading(true)
         try {
-            const response = await fetch(`http://localhost:3000/contacts?page=${page + 1}&limit=${pageSize}`)
+            const response = await fetch(apiUrl(`/contacts?page=${page + 1}&limit=${pageSize}`))
             const result = await response.json()
             setData(result.data)
             setPageCount(result.meta.totalPages)
@@ -47,7 +50,7 @@ export function Contacts() {
 
     useEffect(() => {
         fetchContacts(pageIndex)
-    }, [pageIndex, fetchContacts])
+    }, [pageIndex, fetchContacts, brandVersion]) // Re-fetch when brand changes
 
     // Handler for opening delete modal
     const handleDeleteClick = (contact: Contact) => {
@@ -77,7 +80,7 @@ export function Contacts() {
 
         // 4. Call API in background (Fire & Forget with error handling)
         try {
-            const res = await fetch(`http://localhost:3000/contacts/${contactId}`, {
+            const res = await fetch(apiUrl(`/contacts/${contactId}`), {
                 method: 'DELETE'
             })
 

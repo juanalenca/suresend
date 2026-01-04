@@ -1,24 +1,31 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
+import { getUserIdFromJwt } from '../../lib/jwt';
+import { encryptPassword } from '../../lib/crypto';
 
 const prisma = new PrismaClient();
 
 export async function brandsRoutes(app: FastifyInstance) {
-    // Helper to get current user from auth
-    const getCurrentUserId = async (request: any): Promise<string> => {
-        // In production, this would come from JWT token
-        // For now, get from authorization header or use default user
-        const user = await prisma.user.findFirst();
-        if (!user) {
-            throw new Error('No user found');
+    // Helper to get current user from JWT
+    const getCurrentUserId = (request: any): string => {
+        // First try request.userId (set by brandMiddleware)
+        if (request.userId) {
+            return request.userId;
         }
-        return user.id;
+
+        // Fallback: try to extract from JWT directly
+        const userId = getUserIdFromJwt(request);
+        if (userId) {
+            return userId;
+        }
+
+        throw new Error('Unauthorized: No valid authentication');
     };
 
     // GET /brands - List all brands for current user
     app.get('/', async (request, reply) => {
         try {
-            const userId = await getCurrentUserId(request);
+            const userId = getCurrentUserId(request);
 
             const brands = await prisma.brand.findMany({
                 where: { userId },
@@ -48,7 +55,7 @@ export async function brandsRoutes(app: FastifyInstance) {
         const { id } = request.params;
 
         try {
-            const userId = await getCurrentUserId(request);
+            const userId = getCurrentUserId(request);
 
             const brand = await prisma.brand.findFirst({
                 where: { id, userId },
@@ -96,7 +103,7 @@ export async function brandsRoutes(app: FastifyInstance) {
         }
 
         try {
-            const userId = await getCurrentUserId(request);
+            const userId = getCurrentUserId(request);
 
             // Check if this is the first brand (make it default)
             const existingBrands = await prisma.brand.count({ where: { userId } });
@@ -110,7 +117,7 @@ export async function brandsRoutes(app: FastifyInstance) {
                     smtpHost: smtpHost || null,
                     smtpPort: smtpPort || null,
                     smtpUser: smtpUser || null,
-                    smtpPass: smtpPass || null,
+                    smtpPass: smtpPass ? encryptPassword(smtpPass) : null,
                     fromEmail: fromEmail || null,
                     emailDelay: emailDelay || 1000,
                     isDefault
@@ -120,9 +127,18 @@ export async function brandsRoutes(app: FastifyInstance) {
             console.log(`[Brands] ✅ Created brand: ${brand.name} (default: ${isDefault})`);
 
             return brand;
-        } catch (error) {
+        } catch (error: any) {
             app.log.error(error);
-            return reply.status(500).send({ message: 'Error creating brand' });
+
+            // Check for auth errors
+            if (error.message?.includes('Unauthorized')) {
+                return reply.status(401).send({ message: 'Unauthorized: Please login again' });
+            }
+
+            // Log full error for debugging
+            console.error('[Brands] Error creating brand:', error);
+
+            return reply.status(500).send({ message: error.message || 'Error creating brand' });
         }
     });
 
@@ -141,7 +157,7 @@ export async function brandsRoutes(app: FastifyInstance) {
         };
 
         try {
-            const userId = await getCurrentUserId(request);
+            const userId = getCurrentUserId(request);
 
             // Verify brand belongs to user
             const existingBrand = await prisma.brand.findFirst({
@@ -164,7 +180,7 @@ export async function brandsRoutes(app: FastifyInstance) {
 
             // Only update password if provided (non-empty)
             if (smtpPass && smtpPass.trim() !== '' && smtpPass !== '••••••••') {
-                updateData.smtpPass = smtpPass;
+                updateData.smtpPass = encryptPassword(smtpPass);
             }
 
             const brand = await prisma.brand.update({
@@ -189,7 +205,7 @@ export async function brandsRoutes(app: FastifyInstance) {
         const { id } = request.params;
 
         try {
-            const userId = await getCurrentUserId(request);
+            const userId = getCurrentUserId(request);
 
             const brand = await prisma.brand.findFirst({
                 where: { id, userId },
@@ -237,7 +253,7 @@ export async function brandsRoutes(app: FastifyInstance) {
         const { id } = request.params;
 
         try {
-            const userId = await getCurrentUserId(request);
+            const userId = getCurrentUserId(request);
 
             // Verify brand exists
             const brand = await prisma.brand.findFirst({

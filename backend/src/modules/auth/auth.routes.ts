@@ -33,9 +33,10 @@ export async function authRoutes(app: FastifyInstance) {
             }
 
             // 4. Gerar Token JWT
+            const jwtSecret = process.env.JWT_SECRET || 'SUPER_SECRET_JWT_KEY';
             const token = jwt.sign(
                 { sub: user.id, email: user.email },
-                'SUPER_SECRET_JWT_KEY',
+                jwtSecret,
                 { expiresIn: '7d' }
             )
 

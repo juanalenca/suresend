@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { SchedulePicker } from "@/components/ui/SchedulePicker"
 import { useTranslation } from "react-i18next"
 import { Sparkles, Save, Send, Clock, AlertTriangle, Settings } from "lucide-react"
+import { apiUrl } from "@/lib/api"
 
 export default function NewCampaign() {
     const { t } = useTranslation()
@@ -26,7 +27,7 @@ export default function NewCampaign() {
 
     // Fetch warmup status on mount
     useEffect(() => {
-        fetch('http://localhost:3000/warmup')
+        fetch(apiUrl('/warmup'))
             .then(res => res.json())
             .then(data => {
                 if (data.enabled && data.dailyLimit !== null && data.sentToday >= data.dailyLimit) {
@@ -71,7 +72,7 @@ export default function NewCampaign() {
             }
 
             // 1. Create Campaign
-            const res = await fetch('http://localhost:3000/campaigns', {
+            const res = await fetch(apiUrl('/campaigns'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "react-i18next"
 import { Upload, FileSpreadsheet } from "lucide-react"
+import { apiUrl } from "@/lib/api"
 
 interface ImportDialogProps {
     onSuccess: () => void
@@ -33,7 +34,7 @@ export function ImportDialog({ onSuccess }: ImportDialogProps) {
         formData.append('file', file)
 
         try {
-            const response = await fetch('http://localhost:3000/contacts/import', {
+            const response = await fetch(apiUrl('/contacts/import'), {
                 method: 'POST',
                 body: formData,
             })
@@ -60,8 +61,8 @@ export function ImportDialog({ onSuccess }: ImportDialogProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button 
-                    variant="outline" 
+                <Button
+                    variant="outline"
                     className="h-12 px-6 gap-2 border-2 border-slate-700 hover:border-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
                 >
                     <Upload className="w-5 h-5" />
@@ -102,9 +103,9 @@ export function ImportDialog({ onSuccess }: ImportDialogProps) {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button 
-                            type="submit" 
-                            disabled={loading || !file} 
+                        <Button
+                            type="submit"
+                            disabled={loading || !file}
                             className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 h-12"
                         >
                             {loading ? 'Importando...' : t('buttons.import')}

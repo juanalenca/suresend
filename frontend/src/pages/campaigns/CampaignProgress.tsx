@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, CheckCircle, XCircle, Terminal, Sparkles, PauseCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/components/ui/use-toast';
+import { apiUrl } from '@/lib/api';
 
 interface Log {
     email: string;
@@ -39,7 +40,7 @@ export default function CampaignProgress() {
 
         const fetchStats = async () => {
             try {
-                const res = await fetch(`http://localhost:3000/campaigns/${id}/stats`);
+                const res = await fetch(apiUrl(`/campaigns/${id}/stats`));
                 if (!res.ok) return;
                 const data = await res.json();
                 setStats(data);
@@ -57,7 +58,7 @@ export default function CampaignProgress() {
         const triggerSend = async () => {
             if (location.state?.autoStart) {
                 try {
-                    await fetch(`http://localhost:3000/campaigns/${id}/send`, { method: 'POST' });
+                    await fetch(apiUrl(`/campaigns/${id}/send`), { method: 'POST' });
                     // Clear state to avoid re-triggering on refresh
                     navigate(location.pathname, { replace: true, state: {} });
                 } catch (error) {
@@ -86,7 +87,7 @@ export default function CampaignProgress() {
     useEffect(() => {
         if (stats?.status === 'PAUSED' && !warmupToastShown) {
             // Fetch warmup status to check if paused due to limit
-            fetch('http://localhost:3000/warmup')
+            fetch(apiUrl('/warmup'))
                 .then(res => res.json())
                 .then(data => {
                     if (data.enabled && data.dailyLimit !== null && data.sentToday >= data.dailyLimit) {

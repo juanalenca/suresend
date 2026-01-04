@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "react-i18next"
 import { UserPlus } from "lucide-react"
+import { apiUrl } from "@/lib/api"
 
 interface ContactDialogProps {
     onSuccess: () => void
@@ -33,7 +34,7 @@ export function ContactDialog({ onSuccess }: ContactDialogProps) {
         setLoading(true)
 
         try {
-            const response = await fetch('http://localhost:3000/contacts', {
+            const response = await fetch(apiUrl('/contacts'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

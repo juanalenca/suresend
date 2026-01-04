@@ -12,6 +12,8 @@ import {
 import { useTranslation } from "react-i18next"
 import { Send, Eye, Calendar, Sparkles, Plus, Play, Trash2, AlertTriangle, XCircle, Clock, Settings } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { useBrand, getApiHeaders } from "@/context/BrandContext"
+import { apiUrl } from "@/lib/api"
 import {
     Dialog,
     DialogContent,
@@ -37,6 +39,7 @@ export function Campaigns() {
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
     const { toast } = useToast()
+    const { brandVersion } = useBrand()
     const [timeFormat, setTimeFormat] = useState<string | null>(() => localStorage.getItem('timeFormat'));
 
     // Pagination state
@@ -81,7 +84,7 @@ export function Campaigns() {
 
     const loadCampaigns = useCallback((page: number, silent = false) => {
         if (!silent) setLoading(true)
-        fetch(`http://localhost:3000/campaigns?page=${page + 1}&limit=${pageSize}`)
+        fetch(apiUrl(`/campaigns?page=${page + 1}&limit=${pageSize}`))
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch')
                 return res.json()
@@ -101,7 +104,7 @@ export function Campaigns() {
         loadCampaigns(pageIndex);
 
         // Fetch warmup status
-        fetch('http://localhost:3000/warmup')
+        fetch(apiUrl('/warmup'), { headers: getApiHeaders() })
             .then(res => res.json())
             .then(data => {
                 if (data.enabled && data.dailyLimit !== null && data.sentToday >= data.dailyLimit) {
@@ -111,7 +114,7 @@ export function Campaigns() {
                 }
             })
             .catch(() => setWarmupLimitReached(false));
-    }, [pageIndex, loadCampaigns]);
+    }, [pageIndex, loadCampaigns, brandVersion]); // Re-fetch when brand changes
 
     // Auto-refresh when there are active campaigns (SCHEDULED, RUNNING, PROCESSING)
     useEffect(() => {
@@ -158,7 +161,7 @@ export function Campaigns() {
         setData(prev => prev.filter(c => c.id !== id));
 
         try {
-            const res = await fetch(`http://localhost:3000/campaigns/${id}`, {
+            const res = await fetch(apiUrl(`/campaigns/${id}`), {
                 method: 'DELETE'
             });
 
@@ -202,7 +205,7 @@ export function Campaigns() {
         setSelectedCampaignId(null);
 
         try {
-            const res = await fetch(`http://localhost:3000/campaigns/${id}/schedule`, {
+            const res = await fetch(apiUrl(`/campaigns/${id}/schedule`), {
                 method: 'DELETE'
             });
 

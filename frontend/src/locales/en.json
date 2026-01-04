@@ -286,6 +286,10 @@
         "create_button": "Create Brand",
         "created_title": "Brand created!",
         "created_desc": "Brand {{name}} was created successfully.",
+        "edit_brand": "Edit Brand",
+        "edit_success_title": "Brand updated!",
+        "edit_success_desc": "Brand data was saved successfully.",
+        "edit_error": "Could not update brand.",
         "error": "Error",
         "no_brand_selected": "No brand selected"
     }

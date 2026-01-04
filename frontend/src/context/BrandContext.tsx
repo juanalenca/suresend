@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { apiUrl } from '@/lib/api';
 
 export interface Brand {
     id: string;
@@ -24,6 +25,8 @@ interface BrandContextType {
     setCurrentBrand: (brand: Brand) => void;
     refreshBrands: () => Promise<void>;
     loading: boolean;
+    // Version counter that increments on brand change - components can react to this
+    brandVersion: number;
 }
 
 const BrandContext = createContext<BrandContextType | undefined>(undefined);
@@ -35,11 +38,13 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     const [brands, setBrands] = useState<Brand[]>([]);
     const [currentBrand, setCurrentBrandState] = useState<Brand | null>(null);
     const [loading, setLoading] = useState(true);
+    // Version counter that increments when brand changes
+    const [brandVersion, setBrandVersion] = useState(0);
 
     const fetchBrands = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/brands', {
+            const response = await fetch(apiUrl('/brands'), {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -93,6 +98,8 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     const setCurrentBrand = useCallback((brand: Brand) => {
         setCurrentBrandState(brand);
         localStorage.setItem(BRAND_STORAGE_KEY, brand.id);
+        // Increment version to signal components to refetch data
+        setBrandVersion(prev => prev + 1);
     }, []);
 
     const refreshBrands = useCallback(async () => {
@@ -106,7 +113,8 @@ export function BrandProvider({ children }: { children: ReactNode }) {
             currentBrand,
             setCurrentBrand,
             refreshBrands,
-            loading
+            loading,
+            brandVersion
         }}>
             {children}
         </BrandContext.Provider>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiUrl } from "@/lib/api";
 // Removi o import { Button } pois não é mais necessário
 
 export function Unsubscribe() {
@@ -13,7 +14,7 @@ export function Unsubscribe() {
             return;
         }
 
-        fetch(`http://localhost:3000/unsubscribe/${token}`)
+        fetch(apiUrl(`/unsubscribe/${token}`))
             .then(async (res) => {
                 if (res.ok) {
                     setStatus('success');

@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
+import { decryptPassword } from './crypto';
 
 const prisma = new PrismaClient();
 
@@ -24,11 +25,14 @@ export async function getBrandSmtpSettings(brandId: string) {
         throw new Error(`Brand ${brandId} not found`);
     }
 
+    // Decrypt password if stored encrypted
+    const decryptedPass = brand.smtpPass ? decryptPassword(brand.smtpPass) : '';
+
     return {
         host: brand.smtpHost || process.env.SMTP_HOST || 'localhost',
         port: parseInt(brand.smtpPort || process.env.SMTP_PORT || '587', 10),
         user: brand.smtpUser || process.env.SMTP_USER || '',
-        pass: brand.smtpPass || process.env.SMTP_PASS || '',
+        pass: decryptedPass || process.env.SMTP_PASS || '',
         from: brand.fromEmail || process.env.SMTP_FROM || 'noreply@example.com',
         delay: brand.emailDelay || 1000
     };

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/context/AuthContext"
+import { apiUrl } from "@/lib/api"
 import { useNavigate } from "react-router-dom"
 import { useToast } from "@/components/ui/use-toast"
 import { Rocket, Mail, Lock, Sparkles } from "lucide-react"
@@ -22,7 +23,7 @@ export function Login() {
     setLoading(true)
 
     try {
-      const response = await fetch('http://localhost:3000/auth/login', {
+      const response = await fetch(apiUrl('/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

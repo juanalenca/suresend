@@ -286,6 +286,10 @@
         "create_button": "Criar Marca",
         "created_title": "Marca criada!",
         "created_desc": "A marca {{name}} foi criada com sucesso.",
+        "edit_brand": "Editar Marca",
+        "edit_success_title": "Marca atualizada!",
+        "edit_success_desc": "Os dados da marca foram salvos com sucesso.",
+        "edit_error": "Não foi possível atualizar a marca.",
         "error": "Erro",
         "no_brand_selected": "Nenhuma marca selecionada"
     }

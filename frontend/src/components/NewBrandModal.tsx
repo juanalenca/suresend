@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { useBrand, getApiHeaders } from '@/context/BrandContext';
+import { apiUrl } from '@/lib/api';
 
 interface NewBrandModalProps {
     isOpen: boolean;
@@ -51,7 +52,7 @@ export function NewBrandModal({ isOpen, onClose }: NewBrandModalProps) {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:3000/brands', {
+            const response = await fetch(apiUrl('/brands'), {
                 method: 'POST',
                 headers: getApiHeaders(),
                 body: JSON.stringify({
@@ -93,9 +94,7 @@ export function NewBrandModal({ isOpen, onClose }: NewBrandModalProps) {
                 emailDelay: '1000'
             });
             onClose();
-
-            // Reload to apply new brand context
-            window.location.reload();
+            // No page reload needed - setCurrentBrand triggers brandVersion update
 
         } catch (error: any) {
             toast({

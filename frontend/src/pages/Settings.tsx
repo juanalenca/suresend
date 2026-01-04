@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { AlertTriangle, Flame, Building2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useBrand, getApiHeaders } from "@/context/BrandContext";
+import { apiUrl } from "@/lib/api";
 
 export function Settings() {
     const { t, i18n } = useTranslation();
@@ -48,7 +49,7 @@ export function Settings() {
         }
 
         // Fetch brand details for SMTP config
-        fetch(`http://localhost:3000/brands/${currentBrand.id}`, {
+        fetch(apiUrl(`/brands/${currentBrand.id}`), {
             headers: getApiHeaders()
         })
             .then(res => res.json())
@@ -74,7 +75,7 @@ export function Settings() {
             });
 
         // Fetch warmup config
-        fetch('http://localhost:3000/warmup', {
+        fetch(apiUrl('/warmup'), {
             headers: getApiHeaders()
         })
             .then(res => res.json())
@@ -98,7 +99,7 @@ export function Settings() {
         if (!warmup.enabled) return;
 
         const interval = setInterval(() => {
-            fetch('http://localhost:3000/warmup', {
+            fetch(apiUrl('/warmup'), {
                 headers: getApiHeaders()
             })
                 .then(res => res.json())
@@ -152,7 +153,7 @@ export function Settings() {
         setSaving(true);
 
         try {
-            const res = await fetch(`http://localhost:3000/brands/${currentBrand.id}`, {
+            const res = await fetch(apiUrl(`/brands/${currentBrand.id}`), {
                 method: 'PUT',
                 headers: getApiHeaders(),
                 body: JSON.stringify({
@@ -188,7 +189,7 @@ export function Settings() {
     // Warmup handlers
     const handleWarmupStart = async () => {
         try {
-            const res = await fetch('http://localhost:3000/warmup/start', {
+            const res = await fetch(apiUrl('/warmup/start'), {
                 method: 'POST',
                 headers: getApiHeaders()
             });
@@ -202,7 +203,7 @@ export function Settings() {
 
     const handleWarmupStop = async () => {
         try {
-            const res = await fetch('http://localhost:3000/warmup/stop', {
+            const res = await fetch(apiUrl('/warmup/stop'), {
                 method: 'POST',
                 headers: getApiHeaders()
             });
@@ -216,7 +217,7 @@ export function Settings() {
 
     const handleWarmupReset = async () => {
         try {
-            const res = await fetch('http://localhost:3000/warmup/reset', {
+            const res = await fetch(apiUrl('/warmup/reset'), {
                 method: 'POST',
                 headers: getApiHeaders()
             });
@@ -230,7 +231,7 @@ export function Settings() {
 
     const handleWarmupUpdate = async (field: string, value: string | boolean) => {
         try {
-            const res = await fetch('http://localhost:3000/warmup', {
+            const res = await fetch(apiUrl('/warmup'), {
                 method: 'PUT',
                 headers: getApiHeaders(),
                 body: JSON.stringify({ [field]: value })

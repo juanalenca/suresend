@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { useBrand, getApiHeaders } from "@/context/BrandContext"
+import { apiUrl } from "@/lib/api"
 import { useNavigate } from "react-router-dom"
 import {
   Users,
@@ -99,6 +101,7 @@ const mergeChartData = (apiData: ChartDataPoint[]): ChartDataPoint[] => {
 export function Dashboard() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { brandVersion } = useBrand()
 
   // Helper function to get translated text for activity
   const getActivityText = (activity: ActivityItem): { text: string; subtext: string } => {
@@ -185,8 +188,11 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Fetch comprehensive dashboard summary
-    fetch('http://localhost:3000/dashboard/summary')
+    setLoading(true)
+    // Fetch comprehensive dashboard summary with brand context
+    fetch(apiUrl('/dashboard/summary'), {
+      headers: getApiHeaders()
+    })
       .then(res => res.json())
       .then(data => {
         setSummary({
@@ -209,7 +215,7 @@ export function Dashboard() {
           contactStats: getLast6Months()
         }))
       })
-  }, [])
+  }, [brandVersion]) // Re-fetch when brand changes
 
   // Custom tooltip for the chart
   const CustomTooltip = ({ active, payload, label }: any) => {
