@@ -292,5 +292,20 @@
         "edit_error": "Não foi possível atualizar a marca.",
         "error": "Erro",
         "no_brand_selected": "Nenhuma marca selecionada"
+    },
+    "welcome": {
+        "title": "Bem-vindo ao",
+        "subtitle": "Sua plataforma de e-mail marketing self-hosted está pronta para transformar sua comunicação.",
+        "features": {
+            "fast_sends": "Envios Rápidos",
+            "fast_sends_desc": "Dispare milhares de emails em minutos",
+            "secure": "100% Seguro",
+            "secure_desc": "Seus dados protegidos com criptografia",
+            "analytics": "Analytics",
+            "analytics_desc": "Acompanhe métricas em tempo real"
+        },
+        "access_dashboard": "Acessar Dashboard",
+        "view_docs": "Ver Documentação",
+        "footer": "🔒 100% Open Source • Self-Hosted • Privacy First"
     }
 }

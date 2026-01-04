@@ -1,25 +1,27 @@
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
 import { Sparkles, Zap, Shield, TrendingUp } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 function App() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const features = [
     {
       icon: Zap,
-      title: "Envios Rápidos",
-      description: "Dispare milhares de emails em minutos"
+      title: t('welcome.features.fast_sends'),
+      description: t('welcome.features.fast_sends_desc')
     },
     {
       icon: Shield,
-      title: "100% Seguro",
-      description: "Seus dados protegidos com criptografia"
+      title: t('welcome.features.secure'),
+      description: t('welcome.features.secure_desc')
     },
     {
       icon: TrendingUp,
-      title: "Analytics",
-      description: "Acompanhe métricas em tempo real"
+      title: t('welcome.features.analytics'),
+      description: t('welcome.features.analytics_desc')
     }
   ];
 
@@ -45,23 +47,23 @@ function App() {
               </div>
             </div>
           </div>
-          
+
           {/* Heading */}
           <div className="space-y-4">
             <h1 className="text-5xl md:text-6xl font-bold">
-              <span className="text-white">Bem-vindo ao </span>
+              <span className="text-white">{t('welcome.title')} </span>
               <span className="gradient-text">SureSend</span>
             </h1>
-            
+
             <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              Sua plataforma de e-mail marketing self-hosted está pronta para transformar sua comunicação.
+              {t('welcome.subtitle')}
             </p>
           </div>
 
           {/* Feature cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-8">
             {features.map((feature, index) => (
-              <div 
+              <div
                 key={index}
                 className="glass rounded-2xl p-6 border border-slate-800/50 hover:border-violet-500/50 transition-all duration-500 hover:-translate-y-2 group"
               >
@@ -76,27 +78,27 @@ function App() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="text-lg px-8 h-14 shadow-2xl shadow-violet-500/30 hover:shadow-violet-500/50"
               onClick={() => navigate('/dashboard')}
             >
               <Sparkles className="w-5 h-5" />
-              Acessar Dashboard
+              {t('welcome.access_dashboard')}
             </Button>
-            
-            <Button 
-              variant="outline" 
-              size="lg" 
+
+            <Button
+              variant="outline"
+              size="lg"
               className="text-lg px-8 h-14 border-2 border-slate-700 hover:border-violet-500 text-slate-300 hover:text-white"
             >
-              Ver Documentação
+              {t('welcome.view_docs')}
             </Button>
           </div>
 
           {/* Footer text */}
           <p className="text-slate-600 text-sm pt-4">
-            🔒 100% Open Source • Self-Hosted • Privacy First
+            {t('welcome.footer')}
           </p>
         </div>
 

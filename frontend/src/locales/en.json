@@ -292,5 +292,20 @@
         "edit_error": "Could not update brand.",
         "error": "Error",
         "no_brand_selected": "No brand selected"
+    },
+    "welcome": {
+        "title": "Welcome to",
+        "subtitle": "Your self-hosted email marketing platform is ready to transform your communication.",
+        "features": {
+            "fast_sends": "Fast Sending",
+            "fast_sends_desc": "Send thousands of emails in minutes",
+            "secure": "100% Secure",
+            "secure_desc": "Your data protected with encryption",
+            "analytics": "Analytics",
+            "analytics_desc": "Track metrics in real-time"
+        },
+        "access_dashboard": "Access Dashboard",
+        "view_docs": "View Documentation",
+        "footer": "🔒 100% Open Source • Self-Hosted • Privacy First"
     }
 }
